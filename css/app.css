@@ -421,3 +421,7 @@ th button.ord:hover { color: var(--navy); }
   .reg-form > .pie-form > div:first-child .nota { display: none; }
   .reg-form > .pie-form > div:last-child { align-items: stretch !important; }
 }
+/* Vista previa de la nota de crédito */
+.nc-prev { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 10px 12px; border-radius: 8px; background: var(--lime-soft); border: 1px solid #e0ebb0; font-size: 13px; color: var(--texto2); }
+.nc-prev b { color: var(--navy); }
+.nc-prev .neg, .nc-prev b.neg { color: var(--rojo); }
