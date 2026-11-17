@@ -2,7 +2,6 @@
 import { S, alCambiar, borrarClave, claveGuardada, guardarClave, llamar, recargar, ErrorAcceso } from './api.js';
 import { montarRegistro } from './registro.js';
 import { montarHistorial } from './historial.js';
-import { montarDashboard } from './dashboard.js';
 import { montarPagos } from './pagos.js';
 import { montarConsulta } from './consulta.js';
 import { modal } from './ui.js';
@@ -11,7 +10,6 @@ import { $, $$, esc } from './util.js';
 const VISTAS = [
   { id: 'registro', e: 'Registro', ic: '📝', corto: 'Registro', montar: montarRegistro, angosto: true },
   { id: 'historial', e: 'Historial', ic: '📚', corto: 'Historial', montar: montarHistorial },
-  { id: 'dashboard', e: 'Dashboard', ic: '📊', corto: 'Dashboard', montar: montarDashboard },
   { id: 'pagos', e: 'Gestión de Pagos', ic: '💰', corto: 'Pagos', montar: montarPagos },
   { id: 'consulta', e: 'Consulta de Pagos', ic: '🔎', corto: 'Consulta', montar: montarConsulta },
 ];
@@ -25,8 +23,7 @@ window.addEventListener('appinstalled', () => { promptInstalar = null; pintarBot
 const instalada = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 function pintarBotonInstalar() {
-  const b = $('[data-instalar]');
-  if (b) b.hidden = instalada() || (!promptInstalar && !esIOS());
+  $$('[data-instalar]').forEach((b) => { b.hidden = instalada() || (!promptInstalar && !esIOS()); });
 }
 async function instalar() {
   if (promptInstalar) { promptInstalar.prompt(); await promptInstalar.userChoice.catch(() => null); promptInstalar = null; pintarBotonInstalar(); return; }
@@ -47,9 +44,8 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 function pantallaAcceso(msg = '') {
   app.innerHTML = `
     <div class="acceso"><div class="card">
-      <img src="img/logo-icono.svg" alt="Farmacia Bolaños">
-      <h1>FACTURAS FB</h1>
-      <p>Registro de facturas y pagos · Farmacia Bolaños</p>
+      <div class="marca"><img src="img/logito.png" alt=""><div><b>FACTURAS FB</b><small>Farmacia Bolaños</small></div></div>
+      <p class="lema">Registro de facturas y pagos</p>
       <form data-login novalidate>
         <div class="campo"><label for="clave">Clave de acceso</label><input class="inp" id="clave" type="password" autocomplete="current-password" required autofocus></div>
         <label class="check"><input type="checkbox" id="recordar" checked> Recordar en este equipo</label>
@@ -81,26 +77,34 @@ let iniciada = false;
 function iniciar() {
   iniciada = true;
   const fecha = new Date().toLocaleDateString('es-SV', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const marca = '<img src="img/logito.png" alt="Farmacia Bolaños"><div><b>FACTURAS FB</b><small>Farmacia Bolaños</small></div>';
   app.innerHTML = `
-    <header class="top"><div class="top-in">
-      <div class="barra">
-        <img src="img/logo-oscuro.svg" alt="Farmacia Bolaños" width="105" height="36">
+    <aside class="lateral">
+      <a class="marca" href="#registro">${marca}</a>
+      <nav aria-label="Secciones">${VISTAS.map((v) => `<a href="#${v.id}" data-ir="${v.id}"><span aria-hidden="true">${v.ic}</span>${v.e}</a>`).join('')}</nav>
+      <div class="pie-lat">
+        <button class="ico-btn lima" type="button" data-instalar hidden>⬇ Instalar app</button>
+        <button class="ico-btn" type="button" data-salir title="Cerrar sesión en este equipo">⎋ Salir</button>
+      </div>
+    </aside>
+    <div class="contenido">
+      <header class="top"><div class="barra">
+        <a class="marca" href="#registro">${marca}</a>
+        <span class="seccion" data-seccion></span>
         <div class="barra-d">
           <span class="fecha">${esc(fecha)}</span>
           <span class="vivo carga" data-vivo title="Se actualiza sola desde Google Sheets"><i></i><span>En vivo</span></span>
-          <button class="ico-btn lima" type="button" data-instalar hidden>⬇ Instalar</button>
-          <span class="chip-app">FACTURAS FB</span>
-          <button class="ico-btn" type="button" data-salir title="Cerrar sesión en este equipo">Salir</button>
+          <button class="ico-btn lima solo-movil" type="button" data-instalar hidden>⬇</button>
+          <button class="ico-btn solo-movil" type="button" data-salir title="Cerrar sesión en este equipo">Salir</button>
         </div>
-      </div>
-      <nav class="tabs" aria-label="Secciones">${VISTAS.map((v) => `<a class="tab" href="#${v.id}" data-ir="${v.id}"><span aria-hidden="true">${v.ic}</span>${v.e}</a>`).join('')}</nav>
-    </div></header>
-    ${VISTAS.map((v) => `<main id="v-${v.id}" class="${v.angosto ? 'angosto' : ''}" hidden></main>`).join('')}
+      </div></header>
+      ${VISTAS.map((v) => `<main id="v-${v.id}" class="${v.angosto ? 'angosto' : ''}" hidden></main>`).join('')}
+    </div>
     <nav class="nav-movil" aria-label="Secciones">${VISTAS.map((v) => `<a href="#${v.id}" data-ir="${v.id}"><span aria-hidden="true">${v.ic}</span>${v.corto}</a>`).join('')}</nav>
     <div class="sin-red" data-sinred hidden>Sin conexión · se reintentará sola</div>`;
 
-  $('[data-instalar]').onclick = instalar;
-  $('[data-salir]').onclick = () => { borrarClave(); location.hash = ''; location.reload(); };
+  $$('[data-instalar]').forEach((b) => { b.onclick = instalar; });
+  $$('[data-salir]').forEach((b) => { b.onclick = () => { borrarClave(); location.hash = ''; location.reload(); }; });
   pintarBotonInstalar();
 
   const montadas = new Set();
@@ -111,6 +115,7 @@ function iniciar() {
     $$('[data-ir]').forEach((a) => (a.dataset.ir === v.id ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
     if (!montadas.has(v.id)) { v.montar($(`#v-${v.id}`)); montadas.add(v.id); }
     document.title = `${v.e} · FACTURAS FB`;
+    $('[data-seccion]').textContent = v.e;
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', mostrar);

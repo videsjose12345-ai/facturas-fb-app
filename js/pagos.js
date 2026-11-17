@@ -83,7 +83,7 @@ export function montarPagos(raiz) {
 
     cont.innerHTML = `
       <section class="card sinpad" style="margin-top:16px">
-        <div class="cab-card" style="padding:12px 16px;border-bottom:1px solid rgb(248 250 252 / .1)">
+        <div class="cab-card" style="padding:12px 16px;border-bottom:1px solid var(--linea)">
           <div><h2 style="margin:0;color:var(--texto)">${esc(una.valores[COL.NOMBRE_COMERCIAL] || una.valores[COL.RAZON_SOCIAL])}</h2><p class="nota" style="margin:0">${esc(una.valores[COL.RAZON_SOCIAL])} · ${esc(provSel)}</p></div>
           <label class="check"><input type="checkbox" data-pagadas ${mostrarPagadas ? 'checked' : ''}> Mostrar facturas pagadas</label>
         </div>

@@ -49,7 +49,7 @@ export function montarConsulta(raiz) {
         <td data-l="Documentos" class="der num">${p.cantidadFacturas}</td>
         <td data-l=""><button class="btn sec chico" type="button" data-det="${p.fila}">Ver detalle</button></td>
       </tr>`).join('')}</tbody></table></div>
-      <p class="nota" style="margin:0;padding:8px 16px;border-top:1px solid rgb(248 250 252 / .1)">${f.length} pago${f.length === 1 ? '' : 's'}${f.length > MAX ? ` · mostrando los primeros ${MAX}; afina la búsqueda` : ''}</p>`;
+      <p class="nota" style="margin:0;padding:8px 16px;border-top:1px solid var(--linea)">${f.length} pago${f.length === 1 ? '' : 's'}${f.length > MAX ? ` · mostrando los primeros ${MAX}; afina la búsqueda` : ''}</p>`;
   }
 
   let ultimoAuto = '';
@@ -73,7 +73,7 @@ export function montarConsulta(raiz) {
     modal(`
       <div class="modal-cab"><div><h2>${esc(p.idPago)}</h2><p>Consulta de pago · solo lectura</p></div><button class="btn ghost" data-cerrar aria-label="Cerrar">✕</button></div>
       <dl class="det">${datos.map(([a, b]) => `<div><dt>${esc(a)}</dt><dd>${String(b ?? '').trim() ? esc(b) : '—'}</dd></div>`).join('')}</dl>
-      <h3 style="margin:20px 0 8px;font-size:14px;color:rgb(248 250 252 / .7)">Documentos de este pago</h3>
+      <h3 style="margin:20px 0 8px;font-size:14px;color:var(--texto2)">Documentos de este pago</h3>
       ${p.detalle.length === 0 ? '<p class="nota">Este pago no tiene detalle registrado (fue anterior a la Consulta de pagos).</p>' : `
       <table class="t"><thead><tr><th>CCF</th><th class="der">Monto pagado</th><th>Estado</th></tr></thead><tbody>
         ${p.detalle.map((d) => `<tr><td>${esc(d.ccf)}</td><td class="der num">${dinero(d.monto)}</td><td>${badgeEstado(d.estado)}</td></tr>`).join('')}
