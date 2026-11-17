@@ -21,6 +21,11 @@ Escribe en la misma hoja de siempre: **DATOS FB**, **PAGOS** y **PROVEEDORES** (
 - Al pagar solo cambia ESTATUS, COMENTARIOS, N° CHEQUE y FECHA DE ENTREGA. Cada pago agrega una fila en PAGOS; la pestaña se crea sola si no existe.
 - Antes de editar o pagar, revisa que la fila siga siendo el mismo CCF. Si alguien insertó filas, avisa que recargues en vez de escribir en la fila equivocada.
 
+## Estado
+
+- **En la hoja real** (`SHEET_ID` = PROGRAMACION DE FACTURAS CXP) desde el 17/11/2026. La copia de prueba quedó aparte, con filas PRUEBA.
+- Versión de la app: 3.2.0 (menú lateral, Registro en una pantalla, NC aplicada al documento).
+
 ## Instalación (ya hecha)
 
 1. Proyecto Apps Script "FACTURAS FB API" con `Code.gs`, zona horaria El Salvador y propiedades `SHEET_ID` y `CLAVE_APP`.
