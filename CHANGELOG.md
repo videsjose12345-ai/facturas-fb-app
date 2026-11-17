@@ -1,6 +1,21 @@
 # FACTURAS FB — Changelog
 
-## 3.1.1 · Registro en una sola pantalla y responsive (actual) — 17/11/2026
+## 3.2.0 · La nota de crédito se aplica al documento (actual) — 17/11/2026
+
+- La nota de crédito **ya no crea otra línea** en DATOS FB. Ahora se aplica al documento (CCF) relacionado:
+  - el monto (positivo) **se suma** a la columna J **NOTA DE CRÉDITO ($)** del CCF; la hoja recalcula TOTAL y SALDO con sus fórmulas;
+  - en **COMENTARIOS** se agrega "NC-#### (dd/mm/aaaa)" con la fecha de ingreso, más el comentario opcional, separado con " | " si ya había algo.
+- **No cambia el estado** del documento ni pide días de crédito.
+- **La fecha de ingreso** solo queda dentro del comentario; no va a otra columna.
+- **Validaciones**:
+  - la misma NC no se puede aplicar dos veces al mismo proveedor;
+  - solo se aplica a documentos en estado 1–4.
+- **Monto mayor que el saldo**: avisa con el saldo resultante y, si confirmas, la aplica aunque el saldo quede negativo.
+- **Vista previa** antes de aplicar: "Nota de crédito $0.00 → $67.00 · Saldo $500.00 → $433.00".
+- Las NC que ya están como línea propia en la hoja (formato anterior) se siguen viendo en Historial y se pueden aplicar en Gestión de pagos como antes.
+- Apps Script versión 3.2.0: la acción `aplicarNota` reemplaza a `registrarNota`.
+
+## 3.1.1 · Registro en una sola pantalla y responsive — 17/11/2026
 
 - **Registro acoplado a la pantalla**: en computadora el formulario cabe completo sin bajar, incluso en ventanas bajas (1366×543).
   - Arriba van los totales del día y, al lado, el tipo de documento (CCF / Nota de crédito).
