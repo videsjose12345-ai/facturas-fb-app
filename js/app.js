@@ -8,7 +8,7 @@ import { modal } from './ui.js';
 import { $, $$, esc } from './util.js';
 
 const VISTAS = [
-  { id: 'registro', e: 'Registro', ic: '📝', corto: 'Registro', montar: montarRegistro, angosto: true },
+  { id: 'registro', e: 'Registro', ic: '📝', corto: 'Registro', montar: montarRegistro },
   { id: 'historial', e: 'Historial', ic: '📚', corto: 'Historial', montar: montarHistorial },
   { id: 'pagos', e: 'Gestión de Pagos', ic: '💰', corto: 'Pagos', montar: montarPagos },
   { id: 'consulta', e: 'Consulta de Pagos', ic: '🔎', corto: 'Consulta', montar: montarConsulta },

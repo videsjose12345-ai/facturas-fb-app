@@ -14,15 +14,15 @@ export function montarRegistro(raiz) {
   raiz.innerHTML = `
     <h1 class="titulo">Registro de facturas</h1>
     <p class="sub">Compras a crédito y contado, guardadas directamente en la hoja DATOS FB.</p>
-    <section class="kpis" data-kpis-dia style="margin-bottom:20px"></section>
-    <div class="card">
+    <section class="kpis" data-kpis-dia></section>
+    <div class="card doc-card">
       <h2>Tipo de documento <span style="color:var(--teal)">*</span></h2>
       <div class="seg" role="radiogroup" aria-label="Tipo de documento" data-doc>
         <button type="button" role="radio" data-v="CCF" aria-checked="true">CCF</button>
         <button type="button" role="radio" data-v="NC" aria-checked="false">Nota de Crédito</button>
       </div>
     </div>
-    <form data-f-ccf class="pila" novalidate style="margin-top:16px">
+    <form data-f-ccf class="pila reg-form" novalidate>
       <p class="aviso rojo" data-aviso hidden></p>
       ${htmlFactura('r-')}
       <div class="card pie-form">
@@ -37,13 +37,19 @@ export function montarRegistro(raiz) {
         </div>
       </div>
     </form>
-    <div data-f-nc class="pila" hidden style="margin-top:16px"></div>
-    <section class="card" style="margin-top:16px" data-hoy></section>`;
+    <div data-f-nc class="pila reg-nc" hidden></div>
+    <section class="card reg-hoy" data-hoy></section>`;
 
   const fCcf = $('[data-f-ccf]', raiz);
   const form = montarFactura(fCcf, 'r-', { alEnfocarProveedor: () => { if (Date.now() - ultimoCat > 30000) { ultimoCat = Date.now(); recargar(); } } });
   let ultimoCat = Date.now();
   let guardando = false;
+
+  // En pantallas grandes la sección "Programación y pago" va siempre abierta (todo a la vista)
+  const det = fCcf.querySelector('details');
+  const amplia = window.matchMedia('(min-width: 700px)');
+  const abrir = () => { if (amplia.matches) det.open = true; };
+  abrir(); amplia.addEventListener?.('change', abrir);
 
   // Tipo de compra recordado
   const ultimo = leerLocal(LAST_TIPO_KEY, 'CREDITO');
