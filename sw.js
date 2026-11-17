@@ -1,6 +1,6 @@
 // Service worker de FACTURAS FB: permite instalar la app y abrirla sin internet.
 // Los datos de Google Sheets NUNCA se guardan aquí (siempre se piden en vivo).
-const VERSION = 'ffb-v3.0.1';
+const VERSION = 'ffb-v3.0.2';
 const ARCHIVOS = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/config.js', 'js/app.js', 'js/api.js', 'js/ui.js', 'js/util.js', 'js/factura-form.js',
@@ -10,7 +10,7 @@ const ARCHIVOS = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then((c) => c.addAll(ARCHIVOS.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
