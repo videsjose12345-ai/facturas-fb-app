@@ -1,12 +1,12 @@
 // Service worker de FACTURAS FB: permite instalar la app y abrirla sin internet.
 // Los datos de Google Sheets NUNCA se guardan aquí (siempre se piden en vivo).
-const VERSION = 'ffb-v3.0.2';
+const VERSION = 'ffb-v3.1.0';
 const ARCHIVOS = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/config.js', 'js/app.js', 'js/api.js', 'js/ui.js', 'js/util.js', 'js/factura-form.js',
-  'js/registro.js', 'js/historial.js', 'js/dashboard.js', 'js/pagos.js', 'js/consulta.js',
-  'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
-  'img/logo-oscuro.svg', 'img/logo-icono.svg',
+  'js/registro.js', 'js/historial.js', 'js/pagos.js', 'js/consulta.js',
+  'icons/favicon-64.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
+  'img/logito.png',
 ];
 
 self.addEventListener('install', (e) => {

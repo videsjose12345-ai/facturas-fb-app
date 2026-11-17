@@ -1,6 +1,15 @@
 # FACTURAS FB — Changelog
 
-## 3.0.1 · Publicada y probada (actual) — 17/11/2026
+## 3.1.0 · Diseño nuevo: menú lateral, fondo de marca y logito (actual) — 17/11/2026
+
+Combinación elegida: **Interfaz C + Fondo 2 + Logo 2**.
+- **Interfaz C · Menú lateral**: barra azul marino (#043544) a la izquierda, con el logito, los módulos y, abajo, Instalar y Salir. El contenido es claro: tarjetas blancas, KPIs con borde de color y botones azul (#0B8199). En celular el menú va abajo, en azul marino, con la línea verde en el módulo activo.
+- **Fondo 2 · Degradado de marca**: azul muy suave que pasa a verde muy suave.
+- **Logo 2 · Logito + "FACTURAS FB"**: solo el símbolo del logo original (círculo verde y azul con la cruz), recortado con fondo transparente (`img/logito.png`). Va en el menú, la barra del celular y la pantalla de entrada. Los íconos de la app instalada, la pestaña del navegador y el iPhone también son el logito.
+- **Se quitó el módulo Dashboard.** Quedan Registro, Historial, Gestión de pagos y Consulta de pagos. `js/dashboard.js` ya no se carga.
+- Los estados, avisos, ventanas y mensajes se rehicieron en tema claro.
+
+## 3.0.1 · Publicada y probada — 17/11/2026
 
 - Publicada en https://videsjose12345-ai.github.io/facturas-fb-app/ con el Apps Script aparte "FACTURAS FB API".
 - **Dashboard**:
