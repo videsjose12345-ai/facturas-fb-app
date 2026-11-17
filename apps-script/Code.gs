@@ -22,7 +22,7 @@
  *
  */
 
-var VERSION = '3.0.0';
+var VERSION = '3.2.0';
 
 var TAB = {
   datos: 'DATOS FB',
@@ -87,7 +87,7 @@ function doPost(e) {
       case 'todo': return json_(accionTodo_());
       case 'registrarFactura': return json_(conBloqueo_(function () { return registrarFactura_(req.datos); }));
       case 'editarFactura': return json_(conBloqueo_(function () { return editarFactura_(req.fila, req.datos); }));
-      case 'registrarNota': return json_(conBloqueo_(function () { return registrarNota_(req.datos); }));
+      case 'aplicarNota': return json_(conBloqueo_(function () { return aplicarNota_(req.datos); }));
       case 'editarNota': return json_(conBloqueo_(function () { return editarNota_(req.datos); }));
       case 'registrarPago': return json_(conBloqueo_(function () { return registrarPago_(req.datos); }));
       default: return json_({ ok: false, error: 'Acción desconocida.' });
@@ -452,63 +452,63 @@ function editarFactura_(fila, d) {
 
 var ESTADOS_CCF_NC = [ESTATUS.PROGRAMADA, ESTATUS.PROCESO_PAGO, ESTATUS.PENDIENTE, ESTATUS.ABONO];
 
-function registrarNota_(d) {
+/**
+ * Aplica una nota de crédito a su CCF (v3.2): NO crea otra fila.
+ * - Suma el monto (positivo) a la columna J "NOTA DE CRÉDITO ($)" del CCF;
+ *   la hoja recalcula TOTAL y SALDO con sus fórmulas.
+ * - Agrega a COMENTARIOS (col. R): "NC-#### (dd/mm/aaaa)" + comentario opcional.
+ * - No cambia el ESTATUS ni los días de crédito del CCF.
+ * - Si el monto es mayor que el saldo, pide confirmación (confirmarExceso).
+ * - La misma NC no se puede aplicar dos veces al mismo proveedor.
+ */
+function aplicarNota_(d) {
   if (!d) return { ok: false, error: 'Datos inválidos.' };
   var numero = normalizarNumeroNota_(d.numeroNota);
   if (!numero || numero.length > 53) return { ok: false, error: 'Ingresa el número de la nota de crédito.' };
-  if (!esIso_(d.fechaEmision)) return { ok: false, error: 'Ingresa la fecha de emisión.' };
-  var monto = Number(d.monto);
+  if (!esIso_(d.fechaIngreso)) return { ok: false, error: 'Ingresa la fecha de ingreso.' };
+  var monto = round2_(Number(d.monto));
   if (!(isFinite(monto) && monto > 0)) return { ok: false, error: 'El monto debe ser mayor que 0.' };
-  var dias = Number(d.creditoDias || 0);
-  if (!(Number.isInteger(dias) && dias >= 0)) return { ok: false, error: 'Los días de crédito deben ser un entero no negativo.' };
   var ccfRel = String(d.ccfRelacionado || '').trim(), codProv = String(d.codProv || '').trim();
-  if (!ccfRel || !codProv) return { ok: false, error: 'Selecciona el CCF relacionado.' };
+  if (!ccfRel || !codProv) return { ok: false, error: 'Selecciona el documento al que se aplica la nota.' };
+  var extra = texto_(d.comentarios, 'Comentarios').replace(/^'/, '');
 
   var filas = todasLasFacturas_();
-  var idx = -1;
+  var ccf = null;
+  var rxNum = new RegExp('(^|[^0-9A-Z])' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9A-Z])', 'i');
   for (var i = 0; i < filas.length; i++) {
     var f = filas[i];
-    if (!esNotaCredito_(f) && norm_(f.valores[COL.CCF]) === norm_(ccfRel) && norm_(f.valores[COL.COD_PROV]) === norm_(codProv)) { idx = i; break; }
+    if (norm_(f.valores[COL.COD_PROV]) !== norm_(codProv)) continue;
+    if (rxNum.test(f.valores[COL.COMENTARIOS]) || norm_(f.valores[COL.CCF]) === norm_(numero)) {
+      return { ok: false, error: 'La ' + numero + ' ya está registrada en el documento ' + f.valores[COL.CCF].trim() + ' (fila ' + f.fila + ').' };
+    }
+    if (!ccf && !esNotaCredito_(f) && norm_(f.valores[COL.CCF]) === norm_(ccfRel)) ccf = f;
   }
-  if (idx === -1) return { ok: false, error: 'El CCF relacionado no existe o no pertenece a ese proveedor.' };
-  var ccf = filas[idx];
-  var estadoCcf = ccf.valores[COL.ESTADO].trim();
-  if (ESTADOS_CCF_NC.indexOf(estadoCcf) === -1) return { ok: false, error: 'El CCF está en estado "' + estadoCcf + '" y no admite notas de crédito.' };
+  if (!ccf) return { ok: false, error: 'El documento relacionado no existe o no pertenece a ese proveedor.' };
+  var estado = ccf.valores[COL.ESTADO].trim();
+  if (ESTADOS_CCF_NC.indexOf(estado) === -1) return { ok: false, error: 'El documento está en estado "' + estado + '" y no admite notas de crédito.' };
 
-  // Debajo del CCF, o debajo de su última nota si ya tiene.
-  var destino = ccf.fila + 1;
-  for (var j = idx + 1; j < filas.length; j++) {
-    var rel = ccfRelacionadoDe_(filas[j].valores[COL.COMENTARIOS]);
-    if (esNotaCredito_(filas[j]) && rel && norm_(rel) === norm_(ccfRel)) destino = filas[j].fila + 1;
-    else break;
+  var saldo = num_(ccf.valores[COL.SALDO]);
+  if (isFinite(saldo) && monto > saldo + TOLERANCIA && !d.confirmarExceso) {
+    return { ok: false, exceso: true, saldo: saldo, error: 'El monto de la nota es mayor que el saldo del documento.' };
   }
 
-  var extra = texto_(d.comentarios, 'Comentarios').replace(/^'/, '');
-  var v = ccf.valores;
-  var reg = {
-    codProv: v[COL.COD_PROV].trim(),
-    razonSocial: v[COL.RAZON_SOCIAL].trim(),
-    nombreComercial: v[COL.NOMBRE_COMERCIAL].trim(),
-    creditoDias: dias,
-    fechaEmision: isoAHoja_(d.fechaEmision),
-    ccf: numero,
-    monto: -round2_(monto), // negativo: TOTAL y SALDO salen negativos por las fórmulas
-    abono: 0,
-    notaCredito: 0,
-    descuentoPorcentaje: 0,
-    fechaProgramacion: '',
-    estatus: ESTATUS.PENDIENTE,
-    comentarios: '[NC de ' + v[COL.CCF].trim() + ']' + (extra ? ' ' + extra : ''),
-    numeroCheque: '',
-    fechaEntregaCheque: '',
-    banco: ''
-  };
+  var ncActual = num_(ccf.valores[COL.NOTA_CREDITO]);
+  var nuevaNc = round2_((isFinite(ncActual) ? ncActual : 0) + monto);
+  var marca = numero + ' (' + isoAHoja_(d.fechaIngreso) + ')' + (extra ? ' ' + extra : '');
+  var comentAnt = ccf.valores[COL.COMENTARIOS].trim();
+  var coment = comentAnt ? comentAnt + ' | ' + marca : marca;
+  if (coment.length > 1000) return { ok: false, error: 'Los comentarios del documento quedarían demasiado largos.' };
 
   var h = hoja_(TAB.datos);
-  h.insertRowAfter(destino - 1); // nueva fila en `destino`, con el formato de la de arriba
-  escribirFila_(h, destino, reg);
+  // Volver a confirmar que la fila sigue siendo el mismo documento antes de escribir
+  var actual = leerFila_(ccf.fila);
+  if (norm_(actual.valores[COL.CCF]) !== norm_(ccfRel) || norm_(actual.valores[COL.COD_PROV]) !== norm_(codProv)) {
+    return { ok: false, error: 'La hoja cambió mientras se guardaba. Intenta de nuevo.' };
+  }
+  h.getRange(ccf.fila, 10).setValue(nuevaNc);                       // J — NOTA DE CRÉDITO ($)
+  h.getRange(ccf.fila, 18).setValue(/^[=+]/.test(coment) ? "'" + coment : coment); // R — COMENTARIOS
   SpreadsheetApp.flush();
-  return { ok: true, fila: destino, factura: leerFila_(destino) };
+  return { ok: true, fila: ccf.fila, factura: leerFila_(ccf.fila), numero: numero, notaTotal: nuevaNc };
 }
 
 /** Edición de una NC: SOLO número (col. G) y días de crédito (col. D). */
