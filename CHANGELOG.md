@@ -1,6 +1,15 @@
 # FACTURAS FB — Changelog
 
-## 3.0.0 · App instalable en GitHub Pages (actual) — 17/11/2026
+## 3.0.1 · Publicada y probada (actual) — 17/11/2026
+
+- Publicada en https://videsjose12345-ai.github.io/facturas-fb-app/ con el Apps Script aparte "FACTURAS FB API".
+- **Dashboard**:
+  - "Total pendiente" ahora suma solo el SALDO de lo que no está pagado;
+  - "Total pagado" suma el TOTAL de las facturas pagadas.
+  - Antes, desde que el pago dejó de escribir el ABONO, las facturas pagadas seguían contando como pendientes: daba $2.19 millones pendientes.
+- La app instalada revisa siempre si hay una versión nueva en GitHub. Antes podía mostrar una versión vieja hasta 10 minutos.
+
+## 3.0.0 · App instalable en GitHub Pages — 17/11/2026
 
 - Antes la app era de Next.js con cuenta de servicio de Google. Ahora es una página estática (HTML/JS) que se publica en **GitHub Pages**: un link que se abre desde cualquier celular o computadora.
 - Es **instalable** (PWA):
