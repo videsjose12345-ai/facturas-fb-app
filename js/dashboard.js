@@ -44,7 +44,12 @@ export function montarDashboard(raiz) {
     const k = { total: enRango.length, monto: 0, pend: 0, prog: 0, pag: 0, proc: 0, abo: 0, venc: 0, mPend: 0, mPag: 0, mProg: 0 };
     for (const f of enRango) {
       const e = est(f), saldo = num(f, COL.SALDO);
-      k.monto += num(f, COL.MONTO); k.mPend += saldo; k.mPag += num(f, COL.ABONO);
+      k.monto += num(f, COL.MONTO);
+      // Desde la v2.0.1 el pago solo cambia el ESTATUS (no el ABONO): una
+      // factura pagada conserva su SALDO en la hoja. Por eso el pendiente
+      // suma solo lo no pagado y el pagado suma el TOTAL de las pagadas.
+      if (e === ESTATUS.PAGADA) k.mPag += num(f, COL.TOTAL);
+      else if (e !== ESTATUS.INACTIVA && e !== ESTATUS.APLICADA) { k.mPend += saldo; k.mPag += num(f, COL.ABONO); }
       if (e === ESTATUS.PENDIENTE) k.pend++;
       else if (e === ESTATUS.PROGRAMADA) { k.prog++; k.mProg += saldo; }
       else if (e === ESTATUS.PAGADA) k.pag++;
