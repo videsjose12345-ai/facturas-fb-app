@@ -1,6 +1,19 @@
 # FACTURAS FB — Changelog
 
-## 3.1.0 · Diseño nuevo: menú lateral, fondo de marca y logito (actual) — 17/11/2026
+## 3.1.1 · Registro en una sola pantalla y responsive (actual) — 17/11/2026
+
+- **Registro acoplado a la pantalla**: en computadora el formulario cabe completo sin bajar, incluso en ventanas bajas (1366×543).
+  - Arriba van los totales del día y, al lado, el tipo de documento (CCF / Nota de crédito).
+  - Abajo, en 3 columnas: Datos de la factura | Ajustes del monto | Programación y pago (siempre abierta). Debajo, el total y "Guardar factura".
+  - La nota de crédito va en 2 columnas: CCF relacionado | datos de la nota.
+- **Responsive**:
+  - Tablets y ventanas medianas (700–1099 px): el formulario va en 2 columnas y también cabe sin bajar (1024×768 y 768×1024).
+  - Celular: el total y el botón "Guardar factura" quedan fijos abajo, siempre a mano.
+  - Pantallas muy grandes (≥1600 px): el contenido se ensancha.
+  - Probado en 1920×1080, 1366×768, 1366×543, 1280×720, 1024×768, 768×1024, 390×844 y 320×568, sin desbordes.
+- Se borró `js/dashboard.js` del repositorio.
+
+## 3.1.0 · Diseño nuevo: menú lateral, fondo de marca y logito — 17/11/2026
 
 Combinación elegida: **Interfaz C + Fondo 2 + Logo 2**.
 - **Interfaz C · Menú lateral**: barra azul marino (#043544) a la izquierda, con el logito, los módulos y, abajo, Instalar y Salir. El contenido es claro: tarjetas blancas, KPIs con borde de color y botones azul (#0B8199). En celular el menú va abajo, en azul marino, con la línea verde en el módulo activo.
