@@ -54,7 +54,7 @@ export async function llamar(accion, datos = {}, clave = claveGuardada()) {
   try { cuerpo = await res.json(); } catch { /* respuesta no JSON */ }
   if (!cuerpo) throw new Error('Google Sheets no respondió correctamente. Intenta de nuevo.');
   if (cuerpo.auth === false) throw new ErrorAcceso(cuerpo.error || 'Clave incorrecta.');
-  if (!cuerpo.ok) throw new Error(cuerpo.error || 'No se pudo completar la operación.');
+  if (!cuerpo.ok) { const e = new Error(cuerpo.error || 'No se pudo completar la operación.'); e.datos = cuerpo; throw e; }
   return cuerpo;
 }
 

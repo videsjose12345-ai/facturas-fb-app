@@ -1,10 +1,10 @@
 // Módulo Registro: facturas (CCF) y notas de crédito.
-import { S, alCambiar, llamar, recargar } from './api.js';
+import { S, alCambiar, llamar, recargar, actualizarFilas } from './api.js';
 import { htmlFactura, montarFactura } from './factura-form.js';
-import { alertaError, campo, mostrarErrores, toast } from './ui.js';
+import { alertaError, campo, confirmar, mostrarErrores, toast } from './ui.js';
 import {
   COL, ESTATUS, SHEET_COLUMNS, $, dinero, esc, esNotaCredito, formatDateForSheet, guardarLocal, hoyIso,
-  leerLocal, normalizarNumeroNota, normalizeSearchText, normalizeSheetDate, parseSheetNumber, sonidoExito,
+  leerLocal, normalizarNumeroNota, roundMoney, normalizeSearchText, normalizeSheetDate, parseSheetNumber, sonidoExito,
 } from './util.js';
 
 const LAST_TIPO_KEY = 'facturas-fb:ultimo-tipo-compra';
@@ -187,7 +187,7 @@ async function exportarRespaldo() {
 function montarNota(raiz) {
   raiz.innerHTML = `
     <section class="card">
-      <h2>CCF relacionado</h2>
+      <h2>Documento al que se aplica</h2>
       <div data-busca>
         ${campo({ id: 'nc-busqueda', label: 'Buscar CCF', req: true, ayuda: 'Por CCF, razón social, nombre comercial o código (solo estados 1–4)', control: '<input class="inp" id="nc-busqueda" placeholder="Escribe 2 o más caracteres…" autocomplete="off">' })}
         <div data-res style="margin-top:8px"></div>
@@ -195,22 +195,23 @@ function montarNota(raiz) {
       <div data-sel hidden></div>
     </section>
     <form class="card" novalidate data-form-nc>
-      <h2>Datos de la nota de crédito</h2>
+      <h2>Nota de crédito</h2>
       <div class="grid g2 form">
-        ${campo({ id: 'nc-numero', label: 'Número de nota de crédito', req: true, ayuda: 'Solo el número; el prefijo NC- se agrega automáticamente', control: '<div class="pref"><span aria-hidden="true">NC-</span><input class="inp" id="nc-numero" placeholder="8888"></div>' })}
-        ${campo({ id: 'nc-fecha', label: 'Fecha de emisión', req: true, control: `<input class="inp" id="nc-fecha" type="date" value="${hoyIso()}">` })}
-        ${campo({ id: 'nc-dias', label: 'Días de crédito', ayuda: 'Entero, no negativo; misma columna que los CCF', control: '<input class="inp" id="nc-dias" type="number" step="1" min="0" inputmode="numeric" value="0">' })}
-        ${campo({ id: 'nc-monto', label: 'Monto ($)', req: true, ayuda: 'Sin límite; se guardará con saldo negativo (ej. -$67.00)', control: '<input class="inp" id="nc-monto" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00">' })}
-        ${campo({ id: 'nc-comentarios', label: 'Comentarios', clase: 'span2', control: '<input class="inp" id="nc-comentarios" maxlength="400">' })}
+        ${campo({ id: 'nc-numero', label: 'Número de nota de crédito', req: true, ayuda: 'Solo el número; el prefijo NC- se agrega solo', control: '<div class="pref"><span aria-hidden="true">NC-</span><input class="inp" id="nc-numero" placeholder="8888"></div>' })}
+        ${campo({ id: 'nc-fecha', label: 'Fecha de ingreso', req: true, ayuda: 'Se anota en comentarios junto al N° de NC', control: `<input class="inp" id="nc-fecha" type="date" value="${hoyIso()}">` })}
+        ${campo({ id: 'nc-monto', label: 'Monto ($)', req: true, ayuda: 'Se suma a NOTA DE CRÉDITO ($) del documento', control: '<input class="inp" id="nc-monto" type="number" step="0.01" min="0.01" inputmode="decimal" placeholder="0.00">' })}
+        ${campo({ id: 'nc-comentarios', label: 'Comentario (opcional)', control: '<input class="inp" id="nc-comentarios" maxlength="300">' })}
       </div>
-      <div class="pie-form" style="margin-top:16px">
-        <p class="nota" style="margin:0;max-width:420px">Quedará en estado ${ESTATUS.PENDIENTE}, agrupada debajo de su CCF. El CCF no se modifica.</p>
-        <button class="btn min" type="submit" data-guardar-nc disabled>Guardar nota</button>
+      <div class="nc-prev" data-prev hidden></div>
+      <div class="pie-form" style="margin-top:12px">
+        <p class="nota" style="margin:0;max-width:440px">No crea otra línea ni cambia el estado del documento: suma el monto en su columna NOTA DE CRÉDITO ($) y anota el N° de NC en sus comentarios.</p>
+        <button class="btn min" type="submit" data-guardar-nc disabled>Aplicar nota</button>
       </div>
     </form>`;
 
   let sel = null, guardando = false;
   const busca = $('#nc-busqueda', raiz), res = $('[data-res]', raiz), cajaSel = $('[data-sel]', raiz);
+  const num = (v) => { const n = parseSheetNumber(v); return Number.isFinite(n) ? n : 0; };
 
   const resultados = () => {
     const q = normalizeSearchText(busca.value);
@@ -236,54 +237,90 @@ function montarNota(raiz) {
     $('[data-busca]', raiz).hidden = !!f;
     cajaSel.hidden = !f;
     $('[data-guardar-nc]', raiz).disabled = !f || guardando;
-    if (!f) { busca.value = ''; pintarRes(); busca.focus(); return; }
+    if (!f) { busca.value = ''; pintarRes(); pintarPrev(); busca.focus(); return; }
     const v = f.valores;
     cajaSel.innerHTML = `<div class="sel-box">
       <div class="cab-card" style="margin-bottom:8px"><b class="disp">CCF ${esc(v[COL.CCF])}</b><button type="button" class="btn ghost chico" data-cambiar>Cambiar</button></div>
-      <dl class="dl">${[['Proveedor', v[COL.COD_PROV]], ['Razón social', v[COL.RAZON_SOCIAL]], ['Nombre comercial', v[COL.NOMBRE_COMERCIAL]], ['Fecha de emisión', v[COL.FECHA_EMISION]], ['Monto', v[COL.MONTO]], ['Saldo', v[COL.SALDO]], ['Estado', v[COL.ESTADO]]]
+      <dl class="dl">${[['Proveedor', v[COL.NOMBRE_COMERCIAL] || v[COL.RAZON_SOCIAL]], ['Código', v[COL.COD_PROV]], ['Fecha de emisión', v[COL.FECHA_EMISION]], ['Monto', v[COL.MONTO]], ['Nota de crédito actual', v[COL.NOTA_CREDITO] || '$0.00'], ['Saldo', v[COL.SALDO]], ['Estado', v[COL.ESTADO]]]
         .map(([a, b]) => `<div><dt>${a}</dt><dd>${esc(String(b).trim() || '—')}</dd></div>`).join('')}</dl></div>`;
     $('[data-cambiar]', cajaSel).onclick = () => elegir(null);
+    pintarPrev();
     $('#nc-numero', raiz).focus();
   }
+
+  /** Vista previa: cómo quedará el documento. */
+  function pintarPrev() {
+    const caja = $('[data-prev]', raiz);
+    const m = Number($('#nc-monto', raiz).value);
+    if (!sel || !(m > 0)) { caja.hidden = true; return; }
+    const v = sel.valores, ncAct = num(v[COL.NOTA_CREDITO]), saldo = num(v[COL.SALDO]);
+    const nuevoSaldo = roundMoney(saldo - m);
+    caja.hidden = false;
+    caja.innerHTML = `<span>Nota de crédito: <b>${dinero(ncAct)}</b> → <b>${dinero(roundMoney(ncAct + m))}</b></span>
+      <span>Saldo: <b>${dinero(saldo)}</b> → <b class="${nuevoSaldo < -0.005 ? 'neg' : ''}">${dinero(nuevoSaldo)}</b></span>
+      ${nuevoSaldo < -0.005 ? '<span class="neg">⚠️ El monto es mayor que el saldo: el saldo quedará negativo.</span>' : ''}`;
+  }
+  $('#nc-monto', raiz).addEventListener('input', pintarPrev);
 
   $('[data-form-nc]', raiz).addEventListener('submit', async (e) => {
     e.preventDefault();
     if (guardando) return;
-    if (!sel) { await alertaError('Selecciona el CCF relacionado con el buscador.'); return; }
+    if (!sel) { await alertaError('Selecciona con el buscador el documento al que se aplica la nota.'); return; }
     const datos = {
       numeroNota: $('#nc-numero', raiz).value.trim(),
-      fechaEmision: $('#nc-fecha', raiz).value,
-      creditoDias: $('#nc-dias', raiz).value.trim() === '' ? 0 : Number($('#nc-dias', raiz).value),
+      fechaIngreso: $('#nc-fecha', raiz).value,
       monto: Number($('#nc-monto', raiz).value),
       comentarios: $('#nc-comentarios', raiz).value.trim(),
       ccfRelacionado: sel.valores[COL.CCF].trim(),
       codProv: sel.valores[COL.COD_PROV].trim(),
+      confirmarExceso: false,
     };
     const err = {};
     if (!normalizarNumeroNota(datos.numeroNota)) err['nc-numero'] = 'Ingresa el número de la nota de crédito';
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(datos.fechaEmision)) err['nc-fecha'] = 'Ingresa la fecha de emisión';
-    if (!Number.isInteger(datos.creditoDias) || datos.creditoDias < 0) err['nc-dias'] = 'Entero, no negativo';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datos.fechaIngreso)) err['nc-fecha'] = 'Ingresa la fecha de ingreso';
     if (!(datos.monto > 0)) err['nc-monto'] = $('#nc-monto', raiz).value.trim() === '' ? 'Ingresa el monto' : 'El monto debe ser mayor que 0';
     if (!mostrarErrores(raiz, err)) return;
 
+    const saldo = num(sel.valores[COL.SALDO]);
+    if (datos.monto > saldo + 0.005) {
+      if (!(await confirmar(`El monto (${dinero(datos.monto)}) es mayor que el saldo del documento (${dinero(saldo)}). El saldo quedará en ${dinero(roundMoney(saldo - datos.monto))}. ¿Aplicar de todos modos?`, 'Sí, aplicar'))) return;
+      datos.confirmarExceso = true;
+    }
+
     guardando = true;
-    const btn = $('[data-guardar-nc]', raiz); btn.disabled = true; btn.textContent = 'Guardando…';
+    const btn = $('[data-guardar-nc]', raiz); btn.disabled = true; btn.textContent = 'Aplicando…';
     try {
-      await llamar('registrarNota', { datos });
+      let r;
+      try {
+        r = await llamar('aplicarNota', { datos });
+      } catch (e1) {
+        // El saldo cambió en la hoja mientras tanto: confirmar con el saldo real
+        if (!e1.datos?.exceso) throw e1;
+        guardando = false;
+        if (!(await confirmar(`En la hoja el saldo del documento es ${dinero(e1.datos.saldo)} y la nota es de ${dinero(datos.monto)}. ¿Aplicar de todos modos?`, 'Sí, aplicar'))) return;
+        guardando = true;
+        r = await llamar('aplicarNota', { datos: { ...datos, confirmarExceso: true } });
+      }
       sonidoExito();
-      toast(`Nota ${normalizarNumeroNota(datos.numeroNota)} registrada — ${ESTATUS.PENDIENTE}`);
+      toast(`${r.numero} aplicada al CCF ${datos.ccfRelacionado} — saldo ${r.factura.valores[COL.SALDO]}`, 'ok', 3500);
+      actualizarFilas([r.factura]);
       ['nc-numero', 'nc-monto', 'nc-comentarios'].forEach((id) => { $(`#${id}`, raiz).value = ''; });
-      $('#nc-dias', raiz).value = '0';
       guardando = false;
       elegir(null);
-      await recargar(); // las filas de abajo se corrieron: se relee toda la hoja
     } catch (err2) {
-      await alertaError(err2.message);
+      await alertaError(err2.message, 'No se pudo aplicar la nota');
     } finally {
-      guardando = false; btn.textContent = 'Guardar nota'; btn.disabled = !sel;
+      guardando = false; btn.textContent = 'Aplicar nota'; btn.disabled = !sel;
     }
   });
 
-  alCambiar(() => { if (!$('[data-busca]', raiz).hidden) pintarRes(); });
+  alCambiar(() => {
+    if (!$('[data-busca]', raiz).hidden) { pintarRes(); return; }
+    // Mantener al día el documento elegido (saldo/NC que cambien en la hoja)
+    if (sel) {
+      const nuevo = S.facturas.find((f) => f.valores[COL.CCF].trim() === sel.valores[COL.CCF].trim() && f.valores[COL.COD_PROV].trim() === sel.valores[COL.COD_PROV].trim() && !esNotaCredito(f));
+      if (nuevo && nuevo.valores.join('|') !== sel.valores.join('|')) { const m = $('#nc-monto', raiz).value; elegir(nuevo); $('#nc-monto', raiz).value = m; pintarPrev(); }
+    }
+  });
   pintarRes();
 }
