@@ -22,7 +22,7 @@
  *
  */
 
-var VERSION = '3.2.0';
+var VERSION = '3.2.2';
 
 var TAB = {
   datos: 'DATOS FB',
@@ -85,11 +85,11 @@ function doPost(e) {
     switch (req.accion) {
       case 'ping': return json_({ ok: true, version: VERSION });
       case 'todo': return json_(accionTodo_());
-      case 'registrarFactura': return json_(conBloqueo_(function () { return registrarFactura_(req.datos); }));
-      case 'editarFactura': return json_(conBloqueo_(function () { return editarFactura_(req.fila, req.datos); }));
-      case 'aplicarNota': return json_(conBloqueo_(function () { return aplicarNota_(req.datos); }));
-      case 'editarNota': return json_(conBloqueo_(function () { return editarNota_(req.datos); }));
-      case 'registrarPago': return json_(conBloqueo_(function () { return registrarPago_(req.datos); }));
+      case 'registrarFactura': return json_(medir_(req.accion, function () { return conBloqueo_(function () { return registrarFactura_(req.datos); }); }));
+      case 'editarFactura': return json_(medir_(req.accion, function () { return conBloqueo_(function () { return editarFactura_(req.fila, req.datos); }); }));
+      case 'aplicarNota': return json_(medir_(req.accion, function () { return conBloqueo_(function () { return aplicarNota_(req.datos); }); }));
+      case 'editarNota': return json_(medir_(req.accion, function () { return conBloqueo_(function () { return editarNota_(req.datos); }); }));
+      case 'registrarPago': return json_(medir_(req.accion, function () { return conBloqueo_(function () { return registrarPago_(req.datos); }); }));
       default: return json_({ ok: false, error: 'Acción desconocida.' });
     }
   } catch (err) {
@@ -139,10 +139,33 @@ function iguales_(a, b) {
   return r === 0;
 }
 
+// ───────────────────────────── Medición (3.2.2) ─────────────────────────────
+// Cada guardado anota cuánto tardó cada paso (ms): espera (otra escritura en curso), proveedor, duplicados,
+// escribir, recalculo (la hoja recalcula sus fórmulas) y leer. Se ve en Apps Script → Ejecuciones (registro)
+// y viaja en la respuesta como "tiempos".
+var T_ = null;
+function tPaso_(k) {
+  if (!T_) return;
+  var a = Date.now();
+  T_.pasos[k] = (T_.pasos[k] || 0) + (a - T_.ult);
+  T_.ult = a;
+}
+function medir_(accion, fn) {
+  T_ = { t0: Date.now(), ult: Date.now(), pasos: {} };
+  var r = fn();
+  var tiempos = { total: Date.now() - T_.t0 };
+  for (var k in T_.pasos) tiempos[k] = T_.pasos[k];
+  T_ = null;
+  console.log(JSON.stringify({ accion: accion, ok: !!(r && r.ok), tiempos: tiempos }));
+  if (r && typeof r === 'object') r.tiempos = tiempos;
+  return r;
+}
+
 /** Una sola escritura a la vez (dos equipos guardando al mismo tiempo). */
 function conBloqueo_(fn) {
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(30000)) return { ok: false, error: 'La hoja está ocupada; intenta de nuevo en unos segundos.' };
+  tPaso_('espera');
   try {
     return fn();
   } finally {
@@ -176,6 +199,23 @@ function todasLasFacturas_() {
   var ultima = h.getLastRow();
   if (ultima < 2) return [];
   var valores = h.getRange(2, 1, ultima - 1, 27).getDisplayValues();
+  var r = [];
+  for (var i = 0; i < valores.length; i++) {
+    var v = pad27_(valores[i]);
+    if (v[COL.COD_PROV].trim() !== '' || v[COL.CCF].trim() !== '') r.push({ fila: i + 2, valores: v });
+  }
+  return r;
+}
+
+/**
+ * Filas de DATOS FB leyendo solo las primeras n columnas (3.2.2): mucho más rápido que las 27 con formato.
+ * Las columnas no leídas quedan vacías ('') en "valores".
+ */
+function facturasCols_(n) {
+  var h = hoja_(TAB.datos);
+  var ultima = h.getLastRow();
+  if (ultima < 2) return [];
+  var valores = h.getRange(2, 1, ultima - 1, n).getDisplayValues();
   var r = [];
   for (var i = 0; i < valores.length; i++) {
     var v = pad27_(valores[i]);
@@ -315,8 +355,8 @@ function escribirFila_(h, fila, r) {
   h.getRange(fila, 1, 1, 5).setValues([[r.codProv, r.razonSocial, r.nombreComercial, r.creditoDias, r.fechaEmision]]);
   h.getRange(fila, 7, 1, 5).setValues([[r.ccf, r.monto, r.abono, r.notaCredito, r.descuentoPorcentaje]]);
   h.getRange(fila, 15).setValue(r.fechaProgramacion || '');
-  h.getRange(fila, 17).setValue(r.estatus);
-  h.getRange(fila, 18, 1, 3).setValues([[r.comentarios || '', r.numeroCheque || '', r.fechaEntregaCheque || '']]);
+  // Q–T juntas (ESTATUS, COMENTARIOS, N° CHEQUE, FECHA DE ENTREGA): una escritura menos (3.2.2)
+  h.getRange(fila, 17, 1, 4).setValues([[r.estatus, r.comentarios || '', r.numeroCheque || '', r.fechaEntregaCheque || '']]);
   h.getRange(fila, 27).setValue(r.banco || '');
 }
 
@@ -385,8 +425,9 @@ function construirRegistro_(d, proveedor) {
 }
 
 /** Anti-duplicados: COD_PROV + CCF (el CCF no es único entre proveedores). */
-function verificarDuplicado_(codProv, ccf, fechaHoja, monto, ignorarFila) {
-  var facturas = todasLasFacturas_();
+function verificarDuplicado_(codProv, ccf, fechaHoja, monto, ignorarFila, facturas) {
+  // Solo hacen falta código (A), fecha (E), CCF (G) y monto (H): se leen las columnas A–H, no las 27
+  facturas = facturas || facturasCols_(8);
   var mismo = false;
   for (var i = 0; i < facturas.length; i++) {
     var f = facturas[i];
@@ -414,17 +455,25 @@ function registrarFactura_(d) {
   if (!prov) return { ok: false, error: 'El proveedor ' + d.proveedor.codProv + ' ya no existe en el catálogo PROVEEDORES. Operación cancelada.' };
 
   var reg = construirRegistro_(d, prov);
-  var dup = verificarDuplicado_(prov.codProv, String(d.ccf).trim(), reg.fechaEmision, reg.monto, null);
+  tPaso_('proveedor');
+  // Una sola lectura (columnas A–H) sirve para buscar duplicados y la última fila con datos
+  var fs = facturasCols_(8);
+  var dup = verificarDuplicado_(prov.codProv, String(d.ccf).trim(), reg.fechaEmision, reg.monto, null, fs);
+  tPaso_('duplicados');
   if (dup === 'FACTURA_COMPLETA') return { ok: false, error: 'Esta factura ya fue registrada anteriormente.' };
   if (dup === 'CCF_PROVEEDOR') return { ok: false, error: 'El CCF ' + String(d.ccf).trim() + ' ya está registrado para este proveedor (con otro monto o fecha). Verifica antes de guardar.' };
 
   var h = hoja_(TAB.datos);
-  var ultima = ultimaFilaConDatos_(h);
+  var ultima = fs.length ? fs[fs.length - 1].fila : 1;   // igual que ultimaFilaConDatos_ (COD_PROV o CCF con datos)
   h.insertRowAfter(ultima); // hereda el formato de la fila de arriba (desplegable de ESTATUS)
   var fila = ultima + 1;
   escribirFila_(h, fila, reg);
+  tPaso_('escribir');
   SpreadsheetApp.flush();
-  return { ok: true, fila: fila, factura: leerFila_(fila) };
+  tPaso_('recalculo');
+  var factura = leerFila_(fila);
+  tPaso_('leer');
+  return { ok: true, fila: fila, factura: factura };
 }
 
 function editarFactura_(fila, d) {
@@ -472,7 +521,9 @@ function aplicarNota_(d) {
   if (!ccfRel || !codProv) return { ok: false, error: 'Selecciona el documento al que se aplica la nota.' };
   var extra = texto_(d.comentarios, 'Comentarios').replace(/^'/, '');
 
-  var filas = todasLasFacturas_();
+  tPaso_('validar');
+  var filas = facturasCols_(18);   // hasta R (COMENTARIOS): no hacen falta las 27 columnas
+  tPaso_('leerHoja');
   var ccf = null;
   var rxNum = new RegExp('(^|[^0-9A-Z])' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9A-Z])', 'i');
   for (var i = 0; i < filas.length; i++) {
@@ -507,8 +558,12 @@ function aplicarNota_(d) {
   }
   h.getRange(ccf.fila, 10).setValue(nuevaNc);                       // J — NOTA DE CRÉDITO ($)
   h.getRange(ccf.fila, 18).setValue(/^[=+]/.test(coment) ? "'" + coment : coment); // R — COMENTARIOS
+  tPaso_('escribir');
   SpreadsheetApp.flush();
-  return { ok: true, fila: ccf.fila, factura: leerFila_(ccf.fila), numero: numero, notaTotal: nuevaNc };
+  tPaso_('recalculo');
+  var factura = leerFila_(ccf.fila);
+  tPaso_('leer');
+  return { ok: true, fila: ccf.fila, factura: factura, numero: numero, notaTotal: nuevaNc };
 }
 
 /** Edición de una NC: SOLO número (col. G) y días de crédito (col. D). */
