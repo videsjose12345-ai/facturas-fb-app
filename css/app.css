@@ -243,6 +243,34 @@ th button.ord:hover { color: var(--navy); }
 .acc button { border: 0; background: none; border-radius: 6px; padding: 3px 7px; cursor: pointer; font-size: 15px; }
 .acc button:hover { background: var(--teal-soft); }
 .inp-monto { height: 36px; width: 112px; text-align: right; }
+/* Historial y Gestión de pagos: sin barra horizontal (Pagos: Emisión bajo CCF y Abono bajo Saldo). Según el ancho, las columnas menos usadas se pasan como texto pequeño
+   debajo de otra columna (Código → bajo Proveedor, Crédito → bajo Vencimiento, Emisión → bajo CCF) y Monto se oculta
+   (se ve en 👁); en pantallas angostas Total va bajo Saldo. En celular (≤760 px) vuelven las tarjetas con todos los datos. */
+.sub-c { display: none; font-size: 11px; color: var(--apagado); font-weight: 400; }
+@media (max-width: 1599px) {
+  table.t th, table.t td { padding-left: 9px; padding-right: 9px; }
+  table.t .c-cod { display: none; }
+  table.t .sub-cod { display: block; }
+}
+@media (max-width: 1365px) {
+  table.t .c-cred { display: none; }
+  table.t .sub-cred { display: block; }
+  table.t .trunc { max-width: 170px; }
+}
+@media (max-width: 1239px) {
+  table.t .c-emi, table.t .c-monto { display: none; }
+  table.t .sub-emi { display: block; }
+  table.t th, table.t td { padding-left: 7px; padding-right: 7px; }
+  table.t .trunc { max-width: 140px; }
+}
+@media (max-width: 1023px) {
+  table.t .c-total, table.t .c-abono { display: none; }
+  table.t .sub-total, table.t .sub-abono { display: block; }
+}
+@media (min-width: 761px) and (max-width: 959px) {
+  table.t th, table.t td { padding-left: 5px; padding-right: 5px; }
+  table.t .trunc { max-width: 110px; }
+}
 @media (max-width: 760px) {
   table.t.cards thead { display: none; }
   table.t.cards, table.t.cards tbody, table.t.cards tr, table.t.cards td { display: block; width: 100%; }
@@ -251,6 +279,8 @@ th button.ord:hover { color: var(--navy); }
   table.t.cards td::before { content: attr(data-l); color: var(--tenue); font-size: 12px; text-align: left; flex-shrink: 0; }
   table.t.cards td[data-l=""]::before { content: none; }
   table.t.cards td.trunc { max-width: none; white-space: normal; overflow-wrap: anywhere; }
+  table.t.cards td.c-cod, table.t.cards td.c-cred, table.t.cards td.c-emi, table.t.cards td.c-monto, table.t.cards td.c-total, table.t.cards td.c-abono { display: flex; }
+  table.t.cards .sub-c { display: none; }
 }
 
 .badge { display: inline-block; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; }
