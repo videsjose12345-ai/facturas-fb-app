@@ -1,6 +1,18 @@
 # FACTURAS FB — Changelog
 
-## 3.2.0 · La nota de crédito se aplica al documento (actual) — 17/11/2026
+## 3.2.1 · Historial y Gestión de pagos sin barra horizontal (actual) — 18/11/2026
+
+- **Historial**: la tabla se adapta al ancho de la pantalla y ya no sale la barra para desplazarse a la derecha. Las columnas menos usadas pasan como texto pequeño debajo de otra:
+  - menos de 1600 px: **Código** va debajo del proveedor;
+  - menos de 1366 px: **Crédito** va debajo del vencimiento ("30 días");
+  - menos de 1240 px: **Fecha de emisión** va debajo del CCF y **Monto** se oculta (se ve en 👁);
+  - menos de 1024 px: **Total** va debajo del saldo.
+- **Gestión de pagos**: en pantallas medianas, la **Emisión** va debajo del CCF y el **Abono** debajo del saldo.
+- En celular (menos de 761 px) siguen las tarjetas con todos los datos.
+- Probado de 320 a 1960 px de ancho, de 10 en 10 px en Historial y de 20 en 20 px en Pagos: ninguna tabla desborda. Registro y Consulta de pagos ya cabían.
+- Solo cambia la página (`css/app.css`, `js/historial.js`, `js/pagos.js`, `sw.js`); el Apps Script no cambia.
+
+## 3.2.0 · La nota de crédito se aplica al documento — 17/11/2026
 
 - La nota de crédito **ya no crea otra línea** en DATOS FB. Ahora se aplica al documento (CCF) relacionado:
   - el monto (positivo) **se suma** a la columna J **NOTA DE CRÉDITO ($)** del CCF; la hoja recalcula TOTAL y SALDO con sus fórmulas;
