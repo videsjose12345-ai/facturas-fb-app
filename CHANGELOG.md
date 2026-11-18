@@ -1,6 +1,18 @@
 # FACTURAS FB — Changelog
 
-## 3.2.1 · Historial y Gestión de pagos sin barra horizontal (actual) — 18/11/2026
+## 3.2.2 · Guardar más rápido (Apps Script) (actual) — 18/11/2026
+
+- **Antes**, cada guardado tardaba de 5 a 14 s en Google. Para revisar duplicados se leía la hoja DATOS FB completa (unas 1,755 filas × 27 columnas con formato).
+- **A · Revisión de duplicados más liviana**: se leen solo las columnas A–H (código, fecha, CCF y monto). Esa misma lectura da la última fila con datos, así que se hacen 3 lecturas menos.
+  - Al aplicar una nota de crédito se leen las columnas A–R en vez de las 27.
+  - Las reglas no cambian: igual se rechaza la factura repetida y el CCF repetido del mismo proveedor.
+- **B · Menos escrituras**: la fila nueva se escribe en 5 partes en vez de 6 (ESTATUS, COMENTARIOS, N° CHEQUE y FECHA DE ENTREGA juntas).
+  - Siguen siendo solo las 16 columnas de datos; nunca las de ARRAYFORMULA.
+- **C · Medición**: cada guardado anota cuánto tarda cada paso: espera, proveedor, duplicados, escribir, recálculo de la hoja y leer.
+  - Se ve en Apps Script → Ejecuciones y viaja en la respuesta como `tiempos`.
+- Solo cambia `apps-script/Code.gs` (versión 3.2.2). La página no cambia.
+
+## 3.2.1 · Historial y Gestión de pagos sin barra horizontal — 18/11/2026
 
 - **Historial**: la tabla se adapta al ancho de la pantalla y ya no sale la barra para desplazarse a la derecha. Las columnas menos usadas pasan como texto pequeño debajo de otra:
   - menos de 1600 px: **Código** va debajo del proveedor;
