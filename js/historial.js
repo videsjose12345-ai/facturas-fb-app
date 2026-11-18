@@ -10,13 +10,13 @@ import {
 const POR_PAGINA = 50;
 const COLUMNAS = [
   { e: 'Proveedor', col: COL.NOMBRE_COMERCIAL, tipo: 'texto' },
-  { e: 'Código', col: COL.COD_PROV, tipo: 'texto' },
+  { e: 'Código', col: COL.COD_PROV, tipo: 'texto', cls: 'c-cod' },
   { e: 'CCF', col: COL.CCF, tipo: 'texto' },
-  { e: 'Fecha emisión', col: COL.FECHA_EMISION, tipo: 'fecha' },
-  { e: 'Monto', col: COL.MONTO, tipo: 'numero' },
-  { e: 'Total', col: COL.TOTAL, tipo: 'numero' },
+  { e: 'Fecha emisión', col: COL.FECHA_EMISION, tipo: 'fecha', cls: 'c-emi' },
+  { e: 'Monto', col: COL.MONTO, tipo: 'numero', cls: 'c-monto' },
+  { e: 'Total', col: COL.TOTAL, tipo: 'numero', cls: 'c-total' },
   { e: 'Saldo', col: COL.SALDO, tipo: 'numero' },
-  { e: 'Crédito', col: COL.CREDITO, tipo: 'numero' },
+  { e: 'Crédito', col: COL.CREDITO, tipo: 'numero', cls: 'c-cred' },
   { e: 'Vencimiento', col: COL.VENCIMIENTO, tipo: 'fecha' },
   { e: 'Estado', col: COL.ESTADO, tipo: 'texto' },
 ];
@@ -99,20 +99,20 @@ export function montarHistorial(raiz) {
     const vis = lista.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA);
     if (!vis.length) { cont.innerHTML = '<p class="vacio">No se encontraron resultados.</p>'; return; }
     cont.innerHTML = `<div class="tabla-w"><table class="t cards">
-      <thead><tr><th>Tipo</th>${COLUMNAS.map((c, i) => `<th class="${['numero'].includes(c.tipo) ? 'der' : ''}"><button class="ord" type="button" data-ord="${i}" title="Ordenar por ${c.e}">${c.e}${orden?.col === c.col ? (orden.dir === 1 ? ' ▲' : ' ▼') : ''}</button></th>`).join('')}<th>Acciones</th></tr></thead>
+      <thead><tr><th>Tipo</th>${COLUMNAS.map((c, i) => `<th class="${[c.tipo === 'numero' ? 'der' : '', c.cls || ''].join(' ').trim()}"><button class="ord" type="button" data-ord="${i}" title="Ordenar por ${c.e}">${c.e}${orden?.col === c.col ? (orden.dir === 1 ? ' ▲' : ' ▼') : ''}</button></th>`).join('')}<th>Acciones</th></tr></thead>
       <tbody>${vis.map((f) => {
         const x = f.valores, nc = esNotaCredito(f), rel = nc ? ccfRelacionadoDe(x[COL.COMENTARIOS]) : null;
         return `<tr>
           <td data-l="Tipo"><span class="tipo ${nc ? 'nc' : 'ccf'}">${nc ? 'NC' : 'CCF'}</span></td>
-          <td data-l="Proveedor" class="trunc" title="${esc(x[COL.NOMBRE_COMERCIAL])}">${esc(x[COL.NOMBRE_COMERCIAL] || x[COL.RAZON_SOCIAL])}</td>
-          <td data-l="Código" class="nw tenue">${esc(x[COL.COD_PROV])}</td>
-          <td data-l="CCF" class="nw">${esc(x[COL.CCF])}${rel ? `<span class="rel">→ CCF ${esc(rel)}</span>` : ''}</td>
-          <td data-l="Fecha emisión" class="nw num">${esc(x[COL.FECHA_EMISION])}</td>
-          <td data-l="Monto" class="der nw num">${esc(x[COL.MONTO])}</td>
-          <td data-l="Total" class="der nw num">${esc(x[COL.TOTAL])}</td>
-          <td data-l="Saldo" class="der nw num">${esc(x[COL.SALDO])}</td>
-          <td data-l="Crédito" class="der nw num">${esc(x[COL.CREDITO])}</td>
-          <td data-l="Vencimiento" class="nw num">${esc(x[COL.VENCIMIENTO])}</td>
+          <td data-l="Proveedor" class="trunc" title="${esc(x[COL.NOMBRE_COMERCIAL])}">${esc(x[COL.NOMBRE_COMERCIAL] || x[COL.RAZON_SOCIAL])}<span class="sub-c sub-cod">${esc(x[COL.COD_PROV])}</span></td>
+          <td data-l="Código" class="nw tenue c-cod">${esc(x[COL.COD_PROV])}</td>
+          <td data-l="CCF" class="nw">${esc(x[COL.CCF])}${rel ? `<span class="rel">→ CCF ${esc(rel)}</span>` : ''}<span class="sub-c sub-emi">${esc(x[COL.FECHA_EMISION])}</span></td>
+          <td data-l="Fecha emisión" class="nw num c-emi">${esc(x[COL.FECHA_EMISION])}</td>
+          <td data-l="Monto" class="der nw num c-monto">${esc(x[COL.MONTO])}</td>
+          <td data-l="Total" class="der nw num c-total">${esc(x[COL.TOTAL])}</td>
+          <td data-l="Saldo" class="der nw num">${esc(x[COL.SALDO])}<span class="sub-c sub-total">Total ${esc(x[COL.TOTAL])}</span></td>
+          <td data-l="Crédito" class="der nw num c-cred">${esc(x[COL.CREDITO])}</td>
+          <td data-l="Vencimiento" class="nw num">${esc(x[COL.VENCIMIENTO])}${String(x[COL.CREDITO]).trim() ? `<span class="sub-c sub-cred">${esc(x[COL.CREDITO])} días</span>` : ''}</td>
           <td data-l="Estado">${badgeEstado(x[COL.ESTADO])}</td>
           <td data-l=""><div class="acc"><button type="button" data-ver="${f.fila}" title="Ver toda la información">👁</button><button type="button" data-editar="${f.fila}" title="${nc ? 'Editar nota de crédito (número y días)' : 'Editar factura'}">✏️</button></div></td>
         </tr>`;

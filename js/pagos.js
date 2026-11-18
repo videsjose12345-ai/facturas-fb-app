@@ -89,16 +89,16 @@ export function montarPagos(raiz) {
         </div>
         ${lista.length === 0 ? '<p class="vacio">No se encontraron resultados.</p>' : `
         <div class="tabla-w"><table class="t cards">
-          <thead><tr><th><input type="checkbox" aria-label="Seleccionar todas" data-todas ${todas ? 'checked' : ''}></th><th>CCF</th><th>Emisión</th><th class="der">Monto</th><th class="der">Abono</th><th class="der">Saldo</th><th>Estado</th><th>Vencimiento</th><th class="der">Monto a pagar</th></tr></thead>
+          <thead><tr><th><input type="checkbox" aria-label="Seleccionar todas" data-todas ${todas ? 'checked' : ''}></th><th>CCF</th><th class="c-emi">Emisión</th><th class="der">Monto</th><th class="der c-abono">Abono</th><th class="der">Saldo</th><th>Estado</th><th>Vencimiento</th><th class="der">Monto a pagar</th></tr></thead>
           <tbody>${lista.map((f) => {
             const x = f.valores, e = x[COL.ESTADO].trim(), m = !!sel[f.fila], nc = esNotaCredito(f), pag = e === ESTATUS.PAGADA;
             return `<tr class="${m ? 'marcada' : ''}">
               <td data-l="Seleccionar"><input type="checkbox" data-sel="${f.fila}" aria-label="Seleccionar ${esc(x[COL.CCF])}" ${m ? 'checked' : ''} ${pag ? 'disabled' : ''}></td>
-              <td data-l="CCF" class="nw">${nc ? '<span class="tipo nc" style="margin-right:6px">NC</span>' : ''}${esc(x[COL.CCF])}</td>
-              <td data-l="Emisión" class="nw num">${esc(x[COL.FECHA_EMISION])}</td>
+              <td data-l="CCF" class="nw">${nc ? '<span class="tipo nc" style="margin-right:6px">NC</span>' : ''}${esc(x[COL.CCF])}<span class="sub-c sub-emi">${esc(x[COL.FECHA_EMISION])}</span></td>
+              <td data-l="Emisión" class="nw num c-emi">${esc(x[COL.FECHA_EMISION])}</td>
               <td data-l="Monto" class="der nw num">${esc(x[COL.MONTO])}</td>
-              <td data-l="Abono" class="der nw num">${esc(x[COL.ABONO])}</td>
-              <td data-l="Saldo" class="der nw num"><b>${esc(x[COL.SALDO])}</b></td>
+              <td data-l="Abono" class="der nw num c-abono">${esc(x[COL.ABONO])}</td>
+              <td data-l="Saldo" class="der nw num"><b>${esc(x[COL.SALDO])}</b>${String(x[COL.ABONO]).trim() ? `<span class="sub-c sub-abono">Abono ${esc(x[COL.ABONO])}</span>` : ''}</td>
               <td data-l="Estado">${badgeEstado(e)}</td>
               <td data-l="Vencimiento" class="nw num">${esc(x[COL.VENCIMIENTO])}</td>
               <td data-l="Monto a pagar" class="der">${m ? (nc ? `<b class="num" style="color:var(--violeta)">${esc(sel[f.fila].monto)}</b>` : `<input class="inp inp-monto num" type="number" step="0.01" min="0.01" inputmode="decimal" data-monto="${f.fila}" value="${esc(sel[f.fila].monto)}" aria-label="Monto a pagar de ${esc(x[COL.CCF])}">`) : '<span style="color:var(--apagado)">—</span>'}</td>
