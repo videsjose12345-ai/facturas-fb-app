@@ -1,6 +1,20 @@
 # FACTURAS FB — Changelog
 
-## 3.2.4 · Enter de Descuento a Guardar (actual) — 19/11/2026
+## 3.2.5 · Enter en Nota de Crédito y en Gestión de Pagos (actual) — 19/11/2026
+
+- En Registro → Nota de Crédito, Enter avanza por los campos y luego guarda:
+  - el recorrido es N° de nota → Fecha de ingreso → Monto → Comentario → botón Aplicar nota;
+  - otro Enter aplica la nota.
+  - Antes, Enter en cualquier campo intentaba aplicar la nota de una vez.
+  - Ctrl+Enter aplica desde cualquier campo.
+- En Gestión de Pagos, Enter avanza por: Monto a pagar → Método de pago → Fecha → Banco → Número → Comentarios → botón "Revisar y confirmar pago".
+  - Banco y Número se saltan solos cuando el pago es en efectivo.
+  - Enter en ese botón abre la confirmación; ahí "Confirmar pago" ya está seleccionado y otro Enter guarda.
+  - Ctrl+Enter abre la confirmación desde cualquier campo.
+  - Debajo del botón se muestra la ayuda "Enter avanza · Ctrl+Enter revisa".
+- Archivos: `js/registro.js`, `js/pagos.js` y `sw.js` (`ffb-v3.2.5`).
+
+## 3.2.4 · Enter de Descuento a Guardar — 19/11/2026
 
 - En Registro (CCF), Enter recorre los campos hasta Descuento ($) y de ahí pasa directo al botón Guardar factura. Otro Enter guarda.
 - La sección "Programación y pago" ya no entra en el recorrido con Enter, así que ya no se cierra sola al pasar por su título.
