@@ -114,7 +114,7 @@ export function montarPagos(raiz) {
           ${campo({ id: 'pg-ref', label: 'Número de cheque', req: true, clase: 'no-efectivo', control: '<input class="inp" id="pg-ref">' })}
           ${campo({ id: 'pg-com', label: 'Comentarios del pago', clase: 'span-all', control: '<input class="inp" id="pg-com" maxlength="400" placeholder="Se agregará a todas las facturas seleccionadas">' })}
         </div>
-        <div style="display:flex;justify-content:flex-end;margin-top:16px"><button type="button" class="btn lg" data-revisar>Revisar y confirmar pago</button></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;margin-top:16px"><button type="button" class="btn lg" data-revisar>Revisar y confirmar pago</button><span class="nota">Enter avanza · Ctrl+Enter revisa</span></div>
       </section>`;
 
     const d = datosPrevios || { metodo: metodo.v, fecha: hoyIso(), banco: '', ref: '', com: '' };
@@ -163,6 +163,18 @@ export function montarPagos(raiz) {
     if (e.target.matches('[data-monto]')) { const k = e.target.dataset.monto; if (sel[k]) sel[k].monto = e.target.value; pintarResumen(); }
   });
   prov.addEventListener('click', (e) => { if (e.target.closest('[data-revisar]')) revisar(); });
+  // Enter avanza: montos → método → fecha → banco → número → comentarios → "Revisar y confirmar pago".
+  // En el botón, Enter abre la confirmación y otro Enter (en "Confirmar pago") guarda. Ctrl+Enter revisa desde cualquier campo.
+  const CADENA = '[data-monto], #pg-metodo, #pg-fecha, #pg-banco, #pg-ref, #pg-com';
+  prov.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const t = e.target;
+    if (!t.matches?.(CADENA)) return;
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) { revisar(); return; }
+    const foc = [...prov.querySelectorAll(`${CADENA}, [data-revisar]:not([disabled])`)].filter((x) => x.offsetParent !== null);
+    foc[foc.indexOf(t) + 1]?.focus();
+  });
 
   async function revisar() {
     const lista = seleccionadas();
@@ -225,7 +237,7 @@ export function montarPagos(raiz) {
   function pintarProveedorConservando() {
     // No repintar mientras se escribe un monto (evita perder el cursor)
     const a = document.activeElement;
-    if (a && a.closest?.('[data-prov]') && a.matches('input:not([type="checkbox"]), select')) return;
+    if (a && a.closest?.('[data-prov]') && a.matches('input:not([type="checkbox"]), select, [data-revisar]')) return;
     pintarProveedor();
   }
   pintarChips(); pintarProveedor();

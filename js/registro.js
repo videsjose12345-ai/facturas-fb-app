@@ -267,6 +267,18 @@ function montarNota(raiz) {
   }
   $('#nc-monto', raiz).addEventListener('input', pintarPrev);
 
+  // Igual que en CCF: Enter avanza N° → Fecha → Monto → Comentario → Aplicar nota (y otro Enter aplica); Ctrl+Enter aplica.
+  const fNc = $('[data-form-nc]', raiz);
+  fNc.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const t = e.target;
+    if (t.tagName === 'BUTTON') return;
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) { fNc.requestSubmit(); return; }
+    const foc = [...fNc.querySelectorAll('input:not([disabled]), button[type="submit"]:not([disabled])')].filter((x) => x.offsetParent !== null);
+    foc[foc.indexOf(t) + 1]?.focus();
+  });
+
   $('[data-form-nc]', raiz).addEventListener('submit', async (e) => {
     e.preventDefault();
     if (guardando) return;
