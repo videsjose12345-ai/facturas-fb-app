@@ -22,7 +22,7 @@
  *
  */
 
-var VERSION = '3.2.2';
+var VERSION = '3.2.3';
 
 var TAB = {
   datos: 'DATOS FB',
@@ -510,6 +510,55 @@ var ESTADOS_CCF_NC = [ESTATUS.PROGRAMADA, ESTATUS.PROCESO_PAGO, ESTATUS.PENDIENT
  * - Si el monto es mayor que el saldo, pide confirmación (confirmarExceso).
  * - La misma NC no se puede aplicar dos veces al mismo proveedor.
  */
+/**
+ * La revisión de siempre de una NC (sin cambios): recorre las filas en orden y devuelve
+ * dup = primera fila del mismo proveedor que ya tiene esa NC (en COMENTARIOS o como CCF) y
+ * ccf = primera fila del mismo proveedor con ese CCF que no es NC.
+ */
+function resolverNota_(filas, codProv, ccfRel, numero) {
+  var ccf = null;
+  var rxNum = new RegExp('(^|[^0-9A-Z])' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9A-Z])', 'i');
+  for (var i = 0; i < filas.length; i++) {
+    var f = filas[i];
+    if (norm_(f.valores[COL.COD_PROV]) !== norm_(codProv)) continue;
+    if (rxNum.test(f.valores[COL.COMENTARIOS]) || norm_(f.valores[COL.CCF]) === norm_(numero)) return { dup: f, ccf: null };
+    if (!ccf && !esNotaCredito_(f) && norm_(f.valores[COL.CCF]) === norm_(ccfRel)) ccf = f;
+  }
+  return { dup: null, ccf: ccf };
+}
+
+/**
+ * Filas que pueden importar para la NC (3.2.3): las que tienen el N° de NC en COMENTARIOS (R)
+ * o en CCF (G), y las que tienen el CCF relacionado en G. Las busca Google (TextFinder, sin
+ * distinguir mayúsculas) y se leen solo esas filas (A–R), en orden. Cualquier otra fila no puede
+ * cambiar el resultado de resolverNota_. Si hay demasiadas o algo falla, lee la hoja como antes.
+ */
+function filasParaNota_(ccfRel, numero) {
+  try {
+    var h = hoja_(TAB.datos);
+    var ultima = h.getLastRow();
+    if (ultima < 2) return [];
+    var n = ultima - 1, filas = {};
+    var buscar = function (col, texto) {
+      if (!texto) return;
+      h.getRange(2, col, n, 1).createTextFinder(texto).matchCase(false).matchEntireCell(false).findAll()
+        .forEach(function (c) { filas[c.getRow()] = 1; });
+    };
+    buscar(18, numero); buscar(7, numero); buscar(7, ccfRel);
+    var lista = Object.keys(filas).map(Number).sort(function (a, b) { return a - b; });
+    if (lista.length > 25) return facturasCols_(18);
+    var r = [];
+    for (var i = 0; i < lista.length; i++) {
+      var v = pad27_(h.getRange(lista[i], 1, 1, 18).getDisplayValues()[0]);
+      if (v[COL.COD_PROV].trim() !== '' || v[COL.CCF].trim() !== '') r.push({ fila: lista[i], valores: v });
+    }
+    return r;
+  } catch (e) {
+    console.error('filasParaNota_: ' + e);
+    return facturasCols_(18);
+  }
+}
+
 function aplicarNota_(d) {
   if (!d) return { ok: false, error: 'Datos inválidos.' };
   var numero = normalizarNumeroNota_(d.numeroNota);
@@ -522,18 +571,16 @@ function aplicarNota_(d) {
   var extra = texto_(d.comentarios, 'Comentarios').replace(/^'/, '');
 
   tPaso_('validar');
-  var filas = facturasCols_(18);   // hasta R (COMENTARIOS): no hacen falta las 27 columnas
+  // 3.2.3: en vez de leer toda la hoja, Google busca el N° de NC y el CCF y solo se leen esas filas.
+  // La revisión es la misma de antes (resolverNota_); si algo falla se lee la hoja completa como antes.
+  var filas = filasParaNota_(ccfRel, numero);
   tPaso_('leerHoja');
-  var ccf = null;
-  var rxNum = new RegExp('(^|[^0-9A-Z])' + numero.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![0-9A-Z])', 'i');
-  for (var i = 0; i < filas.length; i++) {
-    var f = filas[i];
-    if (norm_(f.valores[COL.COD_PROV]) !== norm_(codProv)) continue;
-    if (rxNum.test(f.valores[COL.COMENTARIOS]) || norm_(f.valores[COL.CCF]) === norm_(numero)) {
-      return { ok: false, error: 'La ' + numero + ' ya está registrada en el documento ' + f.valores[COL.CCF].trim() + ' (fila ' + f.fila + ').' };
-    }
-    if (!ccf && !esNotaCredito_(f) && norm_(f.valores[COL.CCF]) === norm_(ccfRel)) ccf = f;
+  var res = resolverNota_(filas, codProv, ccfRel, numero);
+  if (res.dup) {
+    var f = res.dup;
+    return { ok: false, error: 'La ' + numero + ' ya está registrada en el documento ' + f.valores[COL.CCF].trim() + ' (fila ' + f.fila + ').' };
   }
+  var ccf = res.ccf;
   if (!ccf) return { ok: false, error: 'El documento relacionado no existe o no pertenece a ese proveedor.' };
   var estado = ccf.valores[COL.ESTADO].trim();
   if (ESTADOS_CCF_NC.indexOf(estado) === -1) return { ok: false, error: 'El documento está en estado "' + estado + '" y no admite notas de crédito.' };
@@ -704,6 +751,31 @@ function hojaPagos_() {
 }
 
 // ───────────────────────────── Prueba manual ─────────────────────────────
+
+/**
+ * Ejecutar desde el editor (NO escribe nada): compara la búsqueda nueva de NC contra la de antes
+ * con documentos reales de la hoja y mide los tiempos.
+ */
+function probarNota() {
+  var todas = facturasCols_(18), casos = [], t;
+  var nums = [];
+  todas.forEach(function (f) { var m = String(f.valores[COL.COMENTARIOS]).match(/NC-?\s*\d+/ig); if (m) nums = nums.concat(m); });
+  for (var i = 0; i < 40; i++) {
+    var f = todas[Math.floor(Math.random() * todas.length)];
+    var num = i % 3 === 0 && nums.length ? normalizarNumeroNota_(nums[Math.floor(Math.random() * nums.length)]) : 'NC-' + (900000 + i);
+    casos.push([f.valores[COL.COD_PROV].trim(), f.valores[COL.CCF].trim(), num]);
+  }
+  var malos = [], tAntes = 0, tNuevo = 0, dups = 0, hallados = 0;
+  casos.forEach(function (c) {
+    t = Date.now(); var a = resolverNota_(facturasCols_(18), c[0], c[1], c[2]); tAntes += Date.now() - t;
+    t = Date.now(); var b = resolverNota_(filasParaNota_(c[1], c[2]), c[0], c[1], c[2]); tNuevo += Date.now() - t;
+    var ka = (a.dup ? 'D' + a.dup.fila : '') + '|' + (a.ccf ? a.ccf.fila : ''), kb = (b.dup ? 'D' + b.dup.fila : '') + '|' + (b.ccf ? b.ccf.fila : '');
+    if (a.dup) dups++; if (a.ccf) hallados++;
+    if (ka !== kb) malos.push(c.join(' / ') + ' → antes ' + ka + ' · nuevo ' + kb);
+  });
+  Logger.log(JSON.stringify({ casos: casos.length, iguales: casos.length - malos.length, conNcRepetida: dups, ccfEncontrado: hallados,
+    msPromedioAntes: Math.round(tAntes / casos.length), msPromedioNuevo: Math.round(tNuevo / casos.length), diferencias: malos }));
+}
 
 /** Ejecutar desde el editor: confirma que lee las 3 pestañas (no escribe nada). */
 function probarLectura() {
