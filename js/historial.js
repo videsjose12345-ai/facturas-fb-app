@@ -1,5 +1,5 @@
 // Módulo Historial: tabla de DATOS FB con buscador, filtros, orden, ver y editar.
-import { S, alCambiar, llamar, actualizarFilas } from './api.js';
+import { S, alCambiar, llamar, actualizarFilas, segundos } from './api.js';
 import { htmlFactura, montarFactura } from './factura-form.js';
 import { alertaError, campo, confirmar, modal, toast } from './ui.js';
 import {
@@ -201,7 +201,7 @@ function editarFactura(f) {
     const btn = $('[data-g]', raiz); btn.disabled = true; btn.textContent = 'Guardando…';
     try {
       const r = await llamar('editarFactura', { fila: f.fila, datos: val });
-      toast(`Factura ${val.ccf} actualizada correctamente`);
+      toast(`Factura ${val.ccf} actualizada correctamente${segundos(r)}`);
       actualizarFilas([r.factura]);
       guardando = false; m.cerrar();
     } catch (err) {

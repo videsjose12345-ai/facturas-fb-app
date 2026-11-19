@@ -1,5 +1,5 @@
 // Módulo Registro: facturas (CCF) y notas de crédito.
-import { S, alCambiar, llamar, recargar, actualizarFilas } from './api.js';
+import { S, alCambiar, llamar, recargar, actualizarFilas, segundos } from './api.js';
 import { htmlFactura, montarFactura } from './factura-form.js';
 import { alertaError, campo, confirmar, mostrarErrores, toast } from './ui.js';
 import {
@@ -86,7 +86,7 @@ export function montarRegistro(raiz) {
     try {
       const r = await llamar('registrarFactura', { datos: v });
       sonidoExito();
-      toast(`Factura ${v.ccf} registrada correctamente`);
+      toast(`Factura ${v.ccf} registrada correctamente${segundos(r)}`);
       agregarHoy({ hora: new Date().toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' }), proveedor: v.proveedor?.nombreComercial ?? '', ccf: v.ccf, monto: v.monto, tipo: v.tipoCompra });
       if (r.factura) { S.facturas.push(r.factura); S.facturas.sort((a, b) => a.fila - b.fila); }
       form.reset(v.tipoCompra);
@@ -302,7 +302,7 @@ function montarNota(raiz) {
         r = await llamar('aplicarNota', { datos: { ...datos, confirmarExceso: true } });
       }
       sonidoExito();
-      toast(`${r.numero} aplicada al CCF ${datos.ccfRelacionado} — saldo ${r.factura.valores[COL.SALDO]}`, 'ok', 3500);
+      toast(`${r.numero} aplicada al CCF ${datos.ccfRelacionado} — saldo ${r.factura.valores[COL.SALDO]}${segundos(r)}`, 'ok', 3500);
       actualizarFilas([r.factura]);
       ['nc-numero', 'nc-monto', 'nc-comentarios'].forEach((id) => { $(`#${id}`, raiz).value = ''; });
       guardando = false;

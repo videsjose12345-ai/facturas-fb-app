@@ -1,5 +1,5 @@
 // Módulo Gestión de pagos: un pago de UN proveedor para una o varias facturas (+ NC).
-import { S, alCambiar, llamar, actualizarFilas, recargar } from './api.js';
+import { S, alCambiar, llamar, actualizarFilas, recargar, segundos } from './api.js';
 import { alertaError, campo, modal, toast } from './ui.js';
 import {
   COL, ESTATUS, ETIQUETA_METODO, METODOS_PAGO, $, badgeEstado, dinero, esNotaCredito, esc, hoyIso,
@@ -212,7 +212,7 @@ export function montarPagos(raiz) {
         const c = $('[data-prov]', raiz); $('#pg-com', c).value = ''; $('#pg-ref', c).value = '';
         actualizarFilas(r.facturas);
         guardando = false; m.cerrar();
-        toast(`Pago registrado — ${r.facturas.length} documento(s) · ${dinero(r.montoTotal)}`);
+        toast(`Pago registrado — ${r.facturas.length} documento(s) · ${dinero(r.montoTotal)}${segundos(r)}`);
         recargar();
       } catch (err) {
         guardando = false; m.cerrar();
