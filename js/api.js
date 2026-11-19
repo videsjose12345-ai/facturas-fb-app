@@ -41,7 +41,11 @@ function anotarTiempo(accion, ms, cuerpo) {
   try {
     const a = JSON.parse(localStorage.getItem(TIEMPOS_KEY) || '[]');
     a.push(reg);
-    localStorage.setItem(TIEMPOS_KEY, JSON.stringify(a.slice(-60)));
+    // Las lecturas automáticas (cada 30 s) no deben borrar los guardados: se guardan aparte
+    // las últimas 15 lecturas y los últimos 60 guardados.
+    const lect = a.filter((r) => r.accion === 'todo').slice(-15);
+    const escr = a.filter((r) => r.accion !== 'todo').slice(-60);
+    localStorage.setItem(TIEMPOS_KEY, JSON.stringify([...lect, ...escr].sort((x, y) => (x.fecha < y.fecha ? -1 : 1))));
   } catch { /* sin almacenamiento */ }
   console.info('[FFB tiempos]', reg);
 }
