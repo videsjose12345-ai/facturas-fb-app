@@ -1,6 +1,14 @@
 # FACTURAS FB — Changelog
 
-## 3.2.5 · Enter en Nota de Crédito y en Gestión de Pagos (actual) — 19/11/2026
+## 3.2.6 · Los tiempos de guardado ya no se pierden (actual) — 19/11/2026
+
+- Antes, las lecturas automáticas de la app (una cada 30 s) llenaban en media hora los 60 espacios del registro de tiempos y borraban los guardados.
+- Ahora se guardan aparte:
+  - las últimas 60 operaciones de guardado (facturas, NC, pagos y ediciones);
+  - las últimas 15 lecturas.
+- Archivos: `js/api.js` y `sw.js` (`ffb-v3.2.6`).
+
+## 3.2.5 · Enter en Nota de Crédito y en Gestión de Pagos — 19/11/2026
 
 - En Registro → Nota de Crédito, Enter avanza por los campos y luego guarda:
   - el recorrido es N° de nota → Fecha de ingreso → Monto → Comentario → botón Aplicar nota;
