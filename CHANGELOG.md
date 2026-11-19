@@ -1,6 +1,15 @@
 # FACTURAS FB — Changelog
 
-## 3.2.3 · Medición de tiempos en la app (actual) — 19/11/2026
+## 3.2.4 · Enter de Descuento a Guardar (actual) — 19/11/2026
+
+- En Registro (CCF), Enter recorre los campos hasta Descuento ($) y de ahí pasa directo al botón Guardar factura. Otro Enter guarda.
+- La sección "Programación y pago" ya no entra en el recorrido con Enter, así que ya no se cierra sola al pasar por su título.
+  - Sus campos se siguen usando con el mouse o con Tab.
+  - Si estás en uno de esos campos, Enter te lleva a Guardar.
+- Ctrl+Enter sigue guardando desde cualquier campo.
+- Archivos: `js/registro.js` y `sw.js` (`ffb-v3.2.4`).
+
+## 3.2.3 · Medición de tiempos en la app — 19/11/2026
 
 - Los avisos de guardado ahora dicen cuánto tardó. Ej.: "Factura 40411 registrada correctamente · 5.2 s".
   - Aplica a registrar factura, aplicar nota de crédito, registrar pago y editar factura.

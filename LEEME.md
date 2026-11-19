@@ -24,7 +24,7 @@ Escribe en la misma hoja de siempre: **DATOS FB**, **PAGOS** y **PROVEEDORES** (
 ## Estado
 
 - **En la hoja real** (`SHEET_ID` = PROGRAMACION DE FACTURAS CXP) desde el 17/11/2026. La copia de prueba quedó aparte, con filas PRUEBA.
-- Versión de la app: 3.2.3 (menú lateral, Registro en una pantalla, NC aplicada al documento, tablas sin barra horizontal, medición de tiempos). El Apps Script está en 3.2.2 (guardado más rápido y con medición de tiempos).
+- Versión de la app: 3.2.4 (menú lateral, Registro en una pantalla, NC aplicada al documento, tablas sin barra horizontal, medición de tiempos). El Apps Script está en 3.2.2 (guardado más rápido y con medición de tiempos).
 
 ## Instalación (ya hecha)
 
