@@ -1,6 +1,17 @@
 # FACTURAS FB — Changelog
 
-## 3.2.2 · Guardar más rápido (Apps Script) (actual) — 18/11/2026
+## 3.2.3 · Medición de tiempos en la app (actual) — 19/11/2026
+
+- Los avisos de guardado ahora dicen cuánto tardó. Ej.: "Factura 40411 registrada correctamente · 5.2 s".
+  - Aplica a registrar factura, aplicar nota de crédito, registrar pago y editar factura.
+- Cada llamada a Google queda anotada en este navegador (últimas 60):
+  - el total en el equipo;
+  - en los guardados, los pasos que manda el Apps Script: espera, proveedor, duplicados, escribir, recálculo y leer.
+  - Sirve para ver qué paso tarda más. También sale en la consola como `[FFB tiempos]`.
+  - No guarda datos de facturas ni la clave.
+- Archivos: `js/api.js`, `js/registro.js`, `js/pagos.js`, `js/historial.js` y `sw.js` (`ffb-v3.2.3`).
+
+## 3.2.2 · Guardar más rápido (Apps Script) — 18/11/2026
 
 - **Antes**, cada guardado tardaba de 5 a 14 s en Google. Para revisar duplicados se leía la hoja DATOS FB completa (unas 1,755 filas × 27 columnas con formato).
 - **A · Revisión de duplicados más liviana**: se leen solo las columnas A–H (código, fecha, CCF y monto). Esa misma lectura da la última fila con datos, así que se hacen 3 lecturas menos.
