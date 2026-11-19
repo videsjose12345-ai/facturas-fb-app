@@ -65,14 +65,19 @@ export function montarRegistro(raiz) {
   pintarTotal();
 
   // Enter avanza al siguiente campo; Ctrl+Enter guarda.
+  // La sección "Programación y pago" se salta: de Descuento ($) Enter va directo a Guardar (y otro Enter guarda).
+  // Si estás dentro de esa sección (llegaste con el mouse o Tab), Enter también avanza a Guardar.
   fCcf.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return;
     const t = e.target;
     if (t.tagName === 'BUTTON' || t.tagName === 'SUMMARY') return;
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) { fCcf.requestSubmit(); return; }
-    const foc = [...fCcf.querySelectorAll('input:not([disabled]), summary, button[type="submit"]:not([disabled])')].filter((x) => x.offsetParent !== null);
-    foc[foc.indexOf(t) + 1]?.focus();
+    const enDet = det.contains(t);
+    const foc = [...fCcf.querySelectorAll('input:not([disabled]), button[type="submit"]:not([disabled])')]
+      .filter((x) => x.offsetParent !== null && (x === t || !det.contains(x)));
+    const sig = enDet ? foc.find((x) => x.matches('button[type="submit"]')) : foc[foc.indexOf(t) + 1];
+    sig?.focus();
   });
 
   fCcf.addEventListener('submit', async (e) => {
