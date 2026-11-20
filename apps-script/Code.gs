@@ -22,7 +22,7 @@
  *
  */
 
-var VERSION = '3.2.2';
+var VERSION = '3.2.4';
 
 var TAB = {
   datos: 'DATOS FB',
@@ -597,7 +597,7 @@ function comentarioDelPago_(metodo, comentarioUsuario) {
 
 function registrarPago_(p) {
   if (!p || METODOS_PAGO.indexOf(p.metodoPago) === -1) return { ok: false, error: 'Elige el método de pago.' };
-  if (!esIso_(p.fechaPago)) return { ok: false, error: 'Ingresa la fecha del pago.' };
+  if (!esIso_(p.fechaPago)) return { ok: false, error: 'Ingresa la fecha de entrega.' };
   if (!Array.isArray(p.facturas) || p.facturas.length === 0) return { ok: false, error: 'Selecciona al menos una factura.' };
   var esEfectivo = p.metodoPago === 'EFECTIVO';
   var banco = texto_(p.banco, 'Banco'), referencia = referencia_(p.referencia, 'Referencia');
@@ -669,8 +669,8 @@ function registrarPago_(p) {
   var detalle = itemsF.map(function (it) { return { ccf: actuales[it.fila].valores[COL.CCF].trim(), monto: Number(it.montoAPagar), estado: ESTATUS.PAGADA }; })
     .concat(itemsN.map(function (it, i) { return { ccf: actuales[it.fila].valores[COL.CCF].trim(), monto: saldosN[i], estado: ESTATUS.APLICADA }; }));
   hojaPagos_().appendRow([
-    'PAGO-' + Utilities.formatDate(ahora, tz, 'yyyyMMdd-HHmmss'),
-    Utilities.formatDate(ahora, tz, 'dd/MM/yyyy'),
+    'PAGO-' + Utilities.formatDate(ahora, tz, 'yyyyMMdd-HHmmss'),   // el ID sigue siendo el momento en que se registró
+    fechaPago,                                                       // 3.2.4: FECHA = fecha de entrega elegida en la app (antes: hoy)
     primera.valores[COL.RAZON_SOCIAL].trim() || primera.valores[COL.NOMBRE_COMERCIAL].trim(),
     primera.valores[COL.COD_PROV].trim(),
     p.metodoPago,
