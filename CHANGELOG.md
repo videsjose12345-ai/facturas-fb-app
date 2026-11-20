@@ -1,6 +1,17 @@
 # FACTURAS FB — Changelog
 
-## 3.2.6 · Los tiempos de guardado ya no se pierden (actual) — 19/11/2026
+## 3.2.7 · Gestión de Pagos: "Fecha de entrega" también en PAGOS (actual) — 20/11/2026
+
+- El campo de la fecha en **Datos del pago** ahora se llama **Fecha de entrega** con cualquier método de pago.
+  - Antes decía "Fecha del cheque", "Fecha de transferencia" o "Fecha del pago".
+  - La confirmación del pago también dice "Fecha de entrega".
+- **Corrección (Apps Script 3.2.4)**: la fila de la pestaña **PAGOS** guardaba en FECHA siempre la fecha de hoy.
+  - Ahora guarda la **fecha de entrega** elegida en la app, la misma que va a DATOS FB (FECHA DE ENTREGA DE CHEQUE).
+  - El ID del pago (PAGO-aaaammdd-hhmmss) sigue siendo el momento en que se registró.
+  - Los pagos ya guardados no se cambiaron.
+- Archivos: `js/pagos.js`, `apps-script/Code.gs` y `sw.js` (`ffb-v3.2.7`).
+
+## 3.2.6 · Los tiempos de guardado ya no se pierden — 19/11/2026
 
 - Antes, las lecturas automáticas de la app (una cada 30 s) llenaban en media hora los 60 espacios del registro de tiempos y borraban los guardados.
 - Ahora se guardan aparte:
