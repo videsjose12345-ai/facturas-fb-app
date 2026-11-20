@@ -109,7 +109,7 @@ export function montarPagos(raiz) {
         <div class="cab-card" style="margin-bottom:12px"><h2 style="margin:0">Datos del pago</h2><span class="badge c-teal" style="font-size:13px;padding:6px 12px" data-resumen></span></div>
         <div class="grid g4">
           ${campo({ id: 'pg-metodo', label: 'Método de pago', req: true, control: `<select class="inp" id="pg-metodo">${METODOS_PAGO.map((m) => `<option value="${m}">${ETIQUETA_METODO[m]}</option>`).join('')}</select>` })}
-          ${campo({ id: 'pg-fecha', label: 'Fecha del cheque', req: true, control: `<input class="inp" id="pg-fecha" type="date" value="${hoyIso()}">` })}
+          ${campo({ id: 'pg-fecha', label: 'Fecha de entrega', req: true, control: `<input class="inp" id="pg-fecha" type="date" value="${hoyIso()}">` })}
           ${campo({ id: 'pg-banco', label: 'Banco', req: true, clase: 'no-efectivo', control: '<input class="inp" id="pg-banco">' })}
           ${campo({ id: 'pg-ref', label: 'Número de cheque', req: true, clase: 'no-efectivo', control: '<input class="inp" id="pg-ref">' })}
           ${campo({ id: 'pg-com', label: 'Comentarios del pago', clase: 'span-all', control: '<input class="inp" id="pg-com" maxlength="400" placeholder="Se agregará a todas las facturas seleccionadas">' })}
@@ -131,7 +131,7 @@ export function montarPagos(raiz) {
     const c = $('[data-prov]', raiz), m = $('#pg-metodo', c).value;
     metodo.v = m;
     c.querySelectorAll('.no-efectivo').forEach((x) => { x.hidden = m === 'EFECTIVO'; });
-    $('label[for="pg-fecha"]', c).innerHTML = `${m === 'CHEQUE' ? 'Fecha del cheque' : m === 'TRANSFERENCIA' ? 'Fecha de transferencia' : 'Fecha del pago'} <span class="req">*</span>`;
+    $('label[for="pg-fecha"]', c).innerHTML = 'Fecha de entrega <span class="req">*</span>';   // 3.2.7: es la fecha de entrega (va a DATOS FB y a PAGOS)
     $('label[for="pg-ref"]', c).innerHTML = `${m === 'CHEQUE' ? 'Número de cheque' : 'Número de referencia'} <span class="req">*</span>`;
   }
   function pintarResumen() {
@@ -189,7 +189,7 @@ export function montarPagos(raiz) {
     }
     const total = totalSel();
     if (total <= 0) return alertaError('El total a pagar debe ser mayor que cero.');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) return alertaError('Ingresa la fecha del pago.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)) return alertaError('Ingresa la fecha de entrega.');
     if (d.metodo !== 'EFECTIVO' && !d.banco.trim()) return alertaError('Indica el banco.');
     if (d.metodo !== 'EFECTIVO' && !d.ref.trim()) return alertaError(d.metodo === 'CHEQUE' ? 'Indica el número de cheque.' : 'Indica el número de referencia.');
 
@@ -200,7 +200,7 @@ export function montarPagos(raiz) {
       ['Monto total', dinero(total)],
       ['Método de pago', ETIQUETA_METODO[d.metodo]],
       ...(d.metodo === 'EFECTIVO' ? [] : [['Banco', d.banco], [d.metodo === 'CHEQUE' ? 'Número de cheque' : 'Número de referencia', d.ref]]),
-      ['Fecha', isoDateToSheetDate(d.fecha)],
+      ['Fecha de entrega', isoDateToSheetDate(d.fecha)],
       ['Comentarios', d.com || '—'],
     ];
     const m = modal(`
